@@ -93,3 +93,101 @@ User feedback + Logging
 - state (OK / degraded / fallback)
 - safety events
 - data for iteration
+
+Human-in-the-loop (why the human is part of control)
+
+The user is not just a signal source. The user is part of the control loop:
+	•	the system must remain learnable through interaction
+	•	uncertainty must be visible via feedback (status, fallback)
+	•	the system must behave predictably when signals degrade
+
+Design intent:
+
+When confidence is low, the system should do less — not guess more.
+
+⸻
+
+Safety & failure modes (design intent)
+
+Reborn is designed around the question: What does the system do when everything goes wrong?
+
+Typical failures considered:
+	•	EMG: poor contact, drift, fatigue, cross-talk, saturation, dropouts
+	•	IMU: drift, artefacts under sudden motion, sensor misalignment
+	•	System: latency spikes, missed updates, desync
+	•	Human: inconsistent intent, unexpected motion patterns
+
+Safety policies (MVP):
+	•	Confidence gating: uncertainty reduces or disables assist
+	•	Fallback modes: safe idle / passive mode / limited assist
+	•	Hard limits: torque, speed, angle
+	•	Logging-first: safety events and degradations are recorded for analysis
+
+⸻
+
+Role of ML (and non-role)
+
+ML may help with:
+	•	confidence/uncertainty estimation
+	•	invalid-signal detection
+	•	intent classification (flex vs no flex)
+	•	reducing false triggers via EMG+IMU fusion
+
+ML must NOT do in MVP:
+	•	directly drive actuators
+	•	replace deterministic decision logic
+	•	replace the safety layer
+	•	“guess” under uncertainty
+
+ML is advisory and bounded.
+⸻
+
+Data collection (summary)
+
+Data collection is designed to expose failure modes, not to maximize dataset size.
+
+Stages:
+	1.	EMG-only: repeatable flexion tasks, varying activation levels, multi-session drift
+	2.	IMU-only: slow/fast motion, holds, artefacts
+	3.	Fusion: complementary degradation (EMG bad / IMU clean and vice versa)
+
+“Bad data” is collected intentionally to validate safe degradation behavior.
+
+⸻
+
+Milestones (4–8 weeks)
+	•	M1: Architecture + safety spec + repo structure
+	•	M2: Data protocol + first recordings (EMG-only)
+	•	M3: Baseline deterministic decision logic (state machine) + logs
+	•	M4: IMU pipeline + robustness comparison (EMG vs IMU)
+	•	M5: Fusion + confidence gating
+	•	M6: Minimal demo + video + results summary
+
+⸻
+
+Repo structure (planned)
+	•	docs/
+	•	architecture.md
+	•	safety.md
+	•	data-protocol.md
+	•	experiments.md
+	•	notebooks/
+	•	01_emg_qc_and_baselines.ipynb
+	•	02_imu_baselines.ipynb
+	•	03_fusion_confidence.ipynb
+	•	prototype/
+	•	firmware / scripts (later)
+	•	assets/
+	•	diagrams, photos, demo video links
+
+⸻
+
+What this project demonstrates
+	•	system design across sensing → decision → actuation
+	•	safety-first engineering and explicit failure handling
+	•	restrained, pragmatic ML usage (bounded and optional)
+	•	human-in-the-loop reasoning and user trust considerations
+	•	documentation quality suitable for R&D collaboration
+
+This is not a demo gadget.
+It is a control system designed around uncertainty, safety, and human interaction.
