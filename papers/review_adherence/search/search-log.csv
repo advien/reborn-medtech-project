@@ -1,0 +1,3 @@
+run_date,run_type,database,query_string,filters,hits,exported_to_zotero,notes
+# run_type: pilot | final. One row per executed query. Paste the EXACT string used (quote it).
+# Example (delete before real logging): 2026-07-20,pilot,PubMed,"(rehabilitation robot*...) AND (adherence...)",none,0,no,draft string not yet piloted

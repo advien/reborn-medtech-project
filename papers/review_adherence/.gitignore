@@ -1,0 +1,6 @@
+# Full-text PDFs and Zotero internal storage are not committed — only exports, logs, and notes.
+*.pdf
+references/storage/
+references/*.sqlite
+# Working copies of the solo-reviewer recheck (kept locally alongside the frozen originals)
+screening/screening-recheck.csv

@@ -1,0 +1,2 @@
+record_id,citation,doi_url,study_type,population,n_participants,device_type,body_region,setting,assistance_strategy,adherence_definition,adherence_metric,metric_source,factors_increase,factors_decrease,links_appropriateness,key_finding,gap_noted,extractor,extract_date,notes
+# One row per INCLUDED study. See extraction-fields.md for definitions. Use "not-stated" rather than guessing.
