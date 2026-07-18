@@ -1,0 +1,3 @@
+record_id,zotero_key,title,year,source_database,ta_decision,ta_reason_code,ft_decision,ft_reason_code,screener,screen_date,notes
+# ta_decision / ft_decision: include | exclude | maybe (maybe only allowed at T/A). reason_code from inclusion-exclusion.md (E1-E7), blank if included.
+# One row per deduplicated record. record_id is your own stable counter (e.g. R0001).
