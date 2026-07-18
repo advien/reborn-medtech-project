@@ -1,0 +1,13 @@
+# TODO: fill in your real name / ORCID before publishing or tagging a release.
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Reborn: a safety-first, human-in-the-loop active elbow orthosis (research platform)"
+type: software
+authors:
+  - family-names: "Your Name"
+    given-names: ""
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/advien/reborn-project"
+license: MIT
+version: 0.1.0
+date-released: "2026-07-17"
