@@ -1,0 +1,84 @@
+{
+  "_comment": [
+    "QC thresholds for Ninapro DB6, derived from the data rather than chosen.",
+    "Produced by: py -3.11 -m reborn.data.qc_calibration data/ninapro_db6 --subjects s01 --channels 0 10",
+    "Calibrated on subject s01 (all 10 sessions); subject s02 was held out as a check.",
+    "The thresholds in reborn.sensing.emg_qc are absolute, and DB6 samples are of",
+    "order 1e-5 V, so the module defaults reject ~100% of this dataset for reasons",
+    "that have nothing to do with signal quality. See docs/research/phase-b-plan.md."
+  ],
+  "dataset": "ninapro_db6",
+  "native_sample_rate_hz": 2000.0,
+  "channels": {
+    "raw_columns": 16,
+    "padding_columns": [8, 9],
+    "montage": [0, 10],
+    "_comment": [
+      "DB6 records 14 electrodes into a 16-column array; columns 8 and 9 are",
+      "identically zero in every file checked. The gate rejects a window when any",
+      "inspected channel fails, so leaving the padding in rejects everything.",
+      "The two-channel montage mirrors Reborn's own hardware rather than modelling",
+      "a 14-electrode forearm array the system does not have. Channel RMS across",
+      "the array spans a factor of ~40, so calibrating over all channels at once",
+      "produces thresholds that suit none of them."
+    ]
+  },
+  "preprocess": {
+    "target_sample_rate_hz": 1000.0,
+    "bandpass_hz": [20.0, 450.0],
+    "notch_hz": 50.0,
+    "window_ms": 200.0,
+    "stride_ms": 50.0,
+    "pure_windows": true
+  },
+  "qc_kwargs": {
+    "min_rms": 1.4233084826660847e-07,
+    "flatline_std": 1.4233084826660847e-07,
+    "max_rms": 0.00029521482339798247,
+    "max_offset": 5.735175351859339e-06,
+    "saturation_limit": 0.0013077530844507559
+  },
+  "derivation": {
+    "min_rms": "p0.1 of window RMS x 0.1",
+    "flatline_std": "p0.1 of window RMS x 0.1",
+    "max_rms": "p99.9 of window RMS x 3.0",
+    "max_offset": "p99.9 of |window mean| x 3.0",
+    "saturation_limit": "p99.9 of window max|x| x 3.0"
+  },
+  "corruption_kwargs": {
+    "_comment": [
+      "reborn.sensing.corruption also takes absolute amplitudes sized for signals",
+      "of order 1. Injecting its defaults into DB6 applies a fault ~50000x the",
+      "signal, which every detector catches; the resulting detection rates are an",
+      "artefact of scale. These are severity 3.0 relative to the montage."
+    ],
+    "severity": 3.0,
+    "dropout": {},
+    "saturation": { "limit": 0.0013077530844507559, "gain": 10.0 },
+    "clipping": { "limit": 0.0013077530844507559 },
+    "baseline_offset": { "offset": 4.863653071334901e-05 },
+    "noise_burst": { "amplitude": 4.863653071334901e-05 }
+  },
+  "observed": {
+    "_comment": "Measured with the above; these are the first real numbers from the pipeline.",
+    "rejection_rate": {
+      "s01_calibrated_on": 0.0067,
+      "s02_held_out": 0.0010
+    },
+    "windows_assessed": { "s01": 136234, "s02": 124556 },
+    "notes": [
+      "Thresholds derived on s01 transfer to the held-out s02 (0.10% rejection), so",
+      "they describe the dataset rather than one subject.",
+      "s01 session d04_t01 rejects 3.6%, an order of magnitude above its neighbours",
+      "(0.0-1.4%). That is a per-session signal-quality event, not noise in the",
+      "threshold, and it is a result worth reporting rather than smoothing away.",
+      "Fault detection at severity 3.0 on real windows: dropout 100%, clipping 100%,",
+      "baseline_offset 100%, saturation 19%, noise_burst 0%.",
+      "The saturation injector overdrives by gain 10, which rarely reaches the rail",
+      "on real EMG, so 19% measures a weak injection rather than a weak detector.",
+      "noise_burst at 0% reproduces the designed division of labour: it is not the",
+      "deterministic layer's job, it is the advisory anomaly detector's. With the",
+      "unscaled defaults it read 100%, which had hidden that split entirely."
+    ]
+  }
+}
