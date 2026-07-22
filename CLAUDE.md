@@ -47,6 +47,11 @@ initiative.
   hasn't started yet per `docs/roadmap.md`.
 - `reborn/ml/` — interface stubs; phase B (open-data ML) training work hasn't produced models to
   wire in yet.
+- `reborn/data/` — real and tested: dataset backends (Ninapro DB6 + a synthetic fixture),
+  preprocessing/windowing with a QC gate, and the evaluation protocols. Offline and research-side:
+  `decision/`, `safety/`, and `control/` must not import it — sensor data reaches them only through
+  the HAL. No dataset has been downloaded yet, so it has produced no results.
+  See [`docs/research/phase-b-plan.md`](docs/research/phase-b-plan.md).
 
 Don't quietly upgrade a skeleton into a full implementation as a side effect of an unrelated
 task — that's a scoped decision the user makes deliberately, tied to which roadmap phase is

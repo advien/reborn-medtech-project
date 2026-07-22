@@ -1,0 +1,168 @@
+"""Tests for the phase-B evaluation protocols.
+
+The whole value of these protocols is that they do not leak. Each test below
+asserts a specific leak is impossible, because a leak here does not raise — it
+produces a plausible-looking number that is simply wrong.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from reborn.data import PreprocessConfig, build_window_set
+from reborn.data.loaders import SyntheticDriftLoader
+from reborn.data.splits import (
+    Split,
+    add_calibration,
+    cross_session_splits,
+    cross_subject_splits,
+    default_guard,
+    random_window_split,
+    within_session_splits,
+)
+
+PERMISSIVE_QC = {"min_rms": 0.0, "max_rms": 1e9, "max_offset": 1e9, "saturation_limit": 1e9}
+
+
+@pytest.fixture
+def window_set():
+    loader = SyntheticDriftLoader(n_subjects=3, n_sessions=4, n_blocks=3, block_seconds=0.5)
+    return build_window_set(loader.load(), PreprocessConfig(qc_kwargs=PERMISSIVE_QC))
+
+
+def test_split_rejects_overlapping_indices():
+    with pytest.raises(ValueError, match="both train and test"):
+        Split(name="bad", train_index=np.array([1, 2, 3]), test_index=np.array([3, 4]))
+
+
+# --------------------------------------------------------------------------- #
+# Cross-session — the core protocol
+# --------------------------------------------------------------------------- #
+
+
+def test_cross_session_never_puts_a_session_on_both_sides(window_set):
+    splits = cross_session_splits(window_set, n_train_sessions=1)
+    assert splits
+
+    for split in splits:
+        train_sessions = set(window_set.session_ids[split.train_index].astype(str))
+        test_sessions = set(window_set.session_ids[split.test_index].astype(str))
+        assert train_sessions.isdisjoint(test_sessions)
+
+
+def test_cross_session_keeps_the_subject_fixed(window_set):
+    for split in cross_session_splits(window_set, n_train_sessions=2):
+        subjects = set(window_set.subject_ids[split.train_index].astype(str))
+        subjects |= set(window_set.subject_ids[split.test_index].astype(str))
+        assert subjects == {split.meta["subject"]}
+
+
+def test_cross_session_reports_how_many_sessions_elapsed(window_set):
+    """Degradation versus elapsed sessions is the result; averaging hides it."""
+    splits = cross_session_splits(window_set, n_train_sessions=1)
+    elapsed = sorted({s.meta["sessions_elapsed"] for s in splits})
+    assert elapsed == [1, 2, 3]
+
+
+def test_cross_session_yields_nothing_when_there_is_only_one_session():
+    loader = SyntheticDriftLoader(n_subjects=2, n_sessions=1, n_blocks=2, block_seconds=0.5)
+    single = build_window_set(loader.load(), PreprocessConfig(qc_kwargs=PERMISSIVE_QC))
+
+    assert cross_session_splits(single, n_train_sessions=1) == []
+
+
+# --------------------------------------------------------------------------- #
+# Cross-subject
+# --------------------------------------------------------------------------- #
+
+
+def test_cross_subject_is_leave_one_subject_out(window_set):
+    splits = cross_subject_splits(window_set)
+    assert len(splits) == 3
+
+    for split in splits:
+        held_out = split.meta["held_out_subject"]
+        assert set(window_set.subject_ids[split.test_index].astype(str)) == {held_out}
+        assert held_out not in set(window_set.subject_ids[split.train_index].astype(str))
+
+
+# --------------------------------------------------------------------------- #
+# Within-session — temporal, with a guard band
+# --------------------------------------------------------------------------- #
+
+
+def test_within_session_stays_inside_one_session(window_set):
+    for split in within_session_splits(window_set):
+        sessions = set(window_set.session_ids[split.train_index].astype(str))
+        sessions |= set(window_set.session_ids[split.test_index].astype(str))
+        assert sessions == {split.meta["session"]}
+
+
+def test_within_session_leaves_a_guard_band_of_overlapping_windows(window_set):
+    guard = default_guard(window_set)
+    assert guard > 0, "200 ms / 50 ms windows overlap; the guard must be non-zero"
+
+    for split in within_session_splits(window_set):
+        # No training window may sit within `guard` positions of the first test
+        # window, or the two share samples.
+        assert split.train_index.max() + guard <= split.test_index.min()
+
+
+def test_default_guard_is_zero_when_stride_is_unknown(window_set):
+    stripped = type(window_set)(
+        windows=window_set.windows,
+        labels=window_set.labels,
+        subject_ids=window_set.subject_ids,
+        session_ids=window_set.session_ids,
+        sample_rate=window_set.sample_rate,
+        qc=window_set.qc,
+    )
+    assert default_guard(stripped) == 0
+
+
+# --------------------------------------------------------------------------- #
+# The control condition
+# --------------------------------------------------------------------------- #
+
+
+def test_random_split_is_disjoint_and_flags_itself_as_leaky(window_set):
+    split = random_window_split(window_set, test_fraction=0.3, seed=0)
+
+    assert np.intersect1d(split.train_index, split.test_index).size == 0
+    assert split.train_index.size + split.test_index.size == window_set.n_windows
+    assert "leaky" in split.meta["warning"]
+
+
+# --------------------------------------------------------------------------- #
+# Few-shot calibration
+# --------------------------------------------------------------------------- #
+
+
+def test_calibration_windows_leave_the_test_set(window_set):
+    base = cross_session_splits(window_set, n_train_sessions=1)[0]
+
+    calibrated = add_calibration(base, window_set, n_per_class=3)
+
+    assert np.intersect1d(calibrated.train_index, calibrated.test_index).size == 0
+    assert calibrated.train_index.size > base.train_index.size
+    assert calibrated.test_index.size < base.test_index.size
+    # Everything added came from the session under test, nowhere else.
+    added = np.setdiff1d(calibrated.train_index, base.train_index)
+    assert np.isin(added, base.test_index).all()
+
+
+def test_calibration_takes_windows_from_every_class(window_set):
+    base = cross_session_splits(window_set, n_train_sessions=1)[0]
+    calibrated = add_calibration(base, window_set, n_per_class=2)
+
+    added = np.setdiff1d(calibrated.train_index, base.train_index)
+    classes = set(window_set.labels[added].tolist())
+
+    assert classes == set(window_set.labels[base.test_index].tolist())
+
+
+def test_calibration_that_would_consume_the_test_set_raises(window_set):
+    base = cross_session_splits(window_set, n_train_sessions=1)[0]
+    with pytest.raises(ValueError, match="consumed the entire test set"):
+        add_calibration(base, window_set, n_per_class=base.test_index.size)
