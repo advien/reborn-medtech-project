@@ -33,6 +33,17 @@ from .base import DatasetLoader
 DEFAULT_PATTERN = re.compile(r"S(?P<subject>\d+)_D(?P<day>\d+)_T(?P<session>\d+)", re.IGNORECASE)
 NATIVE_SAMPLE_RATE = 2000.0
 
+PADDING_CHANNELS = (8, 9)
+"""Columns that are identically zero in every DB6 file.
+
+`emg` is a 16-column array but DB6 records 14 electrodes; columns 8 and 9 are
+padding, verified constant-zero across subjects and sessions. They are dropped
+by default because the QC gate rejects a window when *any* inspected channel
+fails — leaving the padding in place rejects 100% of windows for a reason that
+has nothing to do with signal quality."""
+
+DEFAULT_CHANNELS = tuple(c for c in range(16) if c not in PADDING_CHANNELS)
+
 
 class NinaproDB6Loader(DatasetLoader):
     """Reads DB6 `.mat` files into canonical recordings.
@@ -43,6 +54,12 @@ class NinaproDB6Loader(DatasetLoader):
         label_field: `restimulus` is the re-labelled (movement-aligned) stimulus
             and is the right default; `stimulus` is the raw prompt and lags the
             actual movement, which biases any latency-sensitive result.
+        channels: column indices to keep. Defaults to everything but the padding
+            columns (see `PADDING_CHANNELS`). Narrow this to the montage that
+            mirrors the target hardware — Reborn has one or two channels, so
+            gating on fourteen forearm electrodes models a different system, and
+            the full set is also what makes a QC pass over the whole dataset
+            slow.
         sample_rate: native rate, 2 kHz for DB6.
     """
 
@@ -53,11 +70,13 @@ class NinaproDB6Loader(DatasetLoader):
         root: str | Path,
         pattern: re.Pattern[str] = DEFAULT_PATTERN,
         label_field: str = "restimulus",
+        channels: Sequence[int] | None = DEFAULT_CHANNELS,
         sample_rate: float = NATIVE_SAMPLE_RATE,
     ) -> None:
         self.root = Path(root)
         self.pattern = pattern
         self.label_field = label_field
+        self.channels = tuple(channels) if channels is not None else None
         self.sample_rate = sample_rate
 
     # ----------------------------------------------------------------- #
@@ -67,7 +86,14 @@ class NinaproDB6Loader(DatasetLoader):
             raise FileNotFoundError(
                 f"{self.root} does not exist — download Ninapro DB6 into it first (data/README.md)"
             )
-        found = sorted(self.root.rglob("*.mat"))
+        # The distributed archives are zipped on macOS, so they carry __MACOSX
+        # AppleDouble stubs alongside the real files; those are not readable MAT
+        # files and would crash loadmat.
+        found = sorted(
+            p
+            for p in self.root.rglob("*.mat")
+            if not p.name.startswith("._") and "__MACOSX" not in p.parts
+        )
         if not found:
             raise FileNotFoundError(f"no .mat files under {self.root}")
         return found
@@ -125,6 +151,15 @@ class NinaproDB6Loader(DatasetLoader):
         signal = np.asarray(mat["emg"], dtype=float)
         labels = np.asarray(mat[self.label_field]).reshape(-1).astype(int)
 
+        channels = self.channels
+        if channels is not None:
+            if max(channels) >= signal.shape[1]:
+                raise ValueError(
+                    f"{path.name} has {signal.shape[1]} columns; requested channel "
+                    f"{max(channels)}. Pass `channels` matching this distribution."
+                )
+            signal = signal[:, list(channels)]
+
         # DB6 encodes rest as 0, which is already reborn.data.records.REST_LABEL.
         return EmgRecording(
             signal=signal,
@@ -133,5 +168,9 @@ class NinaproDB6Loader(DatasetLoader):
             subject_id=subject,
             session_id=session,
             source=self.name,
-            meta={"path": str(path), "label_field": self.label_field},
+            meta={
+                "path": str(path),
+                "label_field": self.label_field,
+                "channels": list(channels) if channels is not None else None,
+            },
         )
