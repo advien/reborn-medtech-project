@@ -19,6 +19,7 @@ from .records import EmgRecording, QcReport, WindowSet
 from .splits import (
     Split,
     add_calibration,
+    add_calibration_repetitions,
     cross_session_splits,
     cross_subject_splits,
     random_window_split,
@@ -34,6 +35,7 @@ __all__ = [
     "Split",
     "WindowSet",
     "add_calibration",
+    "add_calibration_repetitions",
     "balanced_accuracy",
     "build_window_set",
     "cross_session_splits",

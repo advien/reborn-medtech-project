@@ -105,7 +105,10 @@ def resample_recording(recording: EmgRecording, target_rate: float) -> EmgRecord
     source_index = np.minimum(
         (np.arange(n_new) * recording.n_samples / n_new).astype(int), recording.n_samples - 1
     )
-    return recording.with_signal(resampled, target_rate, recording.labels[source_index])
+    repetitions = None if recording.repetitions is None else recording.repetitions[source_index]
+    return recording.with_signal(
+        resampled, target_rate, recording.labels[source_index], repetitions
+    )
 
 
 def filter_recording(recording: EmgRecording, config: PreprocessConfig) -> EmgRecording:
@@ -150,15 +153,30 @@ def window_recording(
     is a common source of inflated cross-session numbers.
 
     Returns `(windows, labels, qc)` where windows has shape
-    `(n_kept, window_samples, n_channels)`.
+    `(n_kept, window_samples, n_channels)`. Per-window repetition numbers, when
+    the dataset carries them, come from `window_recording_full`.
+    """
+    windows, labels, qc, _ = window_recording_full(recording, config)
+    return windows, labels, qc
+
+
+def window_recording_full(
+    recording: EmgRecording, config: PreprocessConfig
+) -> tuple[np.ndarray, np.ndarray, QcReport, np.ndarray | None]:
+    """`window_recording` plus per-window repetition numbers.
+
+    Separate entry point rather than a wider return from `window_recording`,
+    which is called in notebooks and would break on an extra tuple element.
     """
     width = config.window_samples
     stride = config.stride_samples
     if recording.n_samples < width:
+        empty_reps = None if recording.repetitions is None else np.empty((0,), dtype=int)
         return (
             np.empty((0, width, recording.n_channels)),
             np.empty((0,), dtype=recording.labels.dtype),
             QcReport(total=0, kept=0),
+            empty_reps,
         )
 
     starts = np.arange(0, recording.n_samples - width + 1, stride)
@@ -167,6 +185,7 @@ def window_recording(
 
     kept_windows: list[np.ndarray] = []
     kept_labels: list[Any] = []
+    kept_repetitions: list[Any] = []
     reasons: dict[str, int] = {}
     total = 0
 
@@ -187,7 +206,11 @@ def window_recording(
             continue
 
         kept_windows.append(window)
+        # Same last-sample rule as the label, for the same reason: the window
+        # belongs to whatever was happening at the decision instant.
         kept_labels.append(label_slice[-1])
+        if recording.repetitions is not None:
+            kept_repetitions.append(recording.repetitions[stop - 1])
 
     if kept_windows:
         windows = np.stack(kept_windows)
@@ -196,7 +219,9 @@ def window_recording(
         windows = np.empty((0, width, recording.n_channels))
         labels = np.empty((0,), dtype=recording.labels.dtype)
 
-    return windows, labels, QcReport(total=total, kept=len(kept_windows), rejected_by_reason=reasons)
+    repetitions = np.asarray(kept_repetitions, dtype=int) if recording.repetitions is not None else None
+    qc = QcReport(total=total, kept=len(kept_windows), rejected_by_reason=reasons)
+    return windows, labels, qc, repetitions
 
 
 def build_window_set(
@@ -208,6 +233,7 @@ def build_window_set(
     """
     all_windows: list[np.ndarray] = []
     all_labels: list[np.ndarray] = []
+    all_repetitions: list[np.ndarray] = []
     subjects: list[str] = []
     sessions: list[str] = []
     qc = QcReport(total=0, kept=0)
@@ -215,13 +241,15 @@ def build_window_set(
 
     for recording in recordings:
         prepared = recording if preprocessed else preprocess(recording, config)
-        windows, labels, report = window_recording(prepared, config)
+        windows, labels, report, repetitions = window_recording_full(prepared, config)
         qc = qc.merge(report)
         sources.add(prepared.source)
         if windows.shape[0] == 0:
             continue
         all_windows.append(windows)
         all_labels.append(labels)
+        if repetitions is not None:
+            all_repetitions.append(repetitions)
         subjects.extend([prepared.subject_id] * windows.shape[0])
         sessions.extend([prepared.session_id] * windows.shape[0])
 
@@ -231,6 +259,12 @@ def build_window_set(
             "dataset's amplitude units (see PreprocessConfig.qc_kwargs)"
         )
 
+    # All-or-nothing: a partially populated repetition array would silently make
+    # repetition-aware splits fall back for some recordings and not others.
+    repetition_ids = (
+        np.concatenate(all_repetitions) if len(all_repetitions) == len(all_windows) else None
+    )
+
     return WindowSet(
         windows=np.concatenate(all_windows, axis=0),
         labels=np.concatenate(all_labels, axis=0),
@@ -238,6 +272,7 @@ def build_window_set(
         session_ids=np.asarray(sessions, dtype=object),
         sample_rate=config.target_sample_rate,
         qc=qc,
+        repetition_ids=repetition_ids,
         source=",".join(sorted(s for s in sources if s)),
         meta={
             "config_fingerprint": config.fingerprint(),
@@ -263,13 +298,15 @@ def save_window_set(window_set: WindowSet, path: str | Path, config: PreprocessC
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        path,
-        windows=window_set.windows,
-        labels=window_set.labels,
-        subject_ids=window_set.subject_ids.astype(str),
-        session_ids=window_set.session_ids.astype(str),
-    )
+    arrays = {
+        "windows": window_set.windows,
+        "labels": window_set.labels,
+        "subject_ids": window_set.subject_ids.astype(str),
+        "session_ids": window_set.session_ids.astype(str),
+    }
+    if window_set.repetition_ids is not None:
+        arrays["repetition_ids"] = window_set.repetition_ids
+    np.savez_compressed(path, **arrays)
     manifest = {
         "config": asdict(config),
         "config_fingerprint": config.fingerprint(),
@@ -298,6 +335,7 @@ def load_window_set(path: str | Path) -> WindowSet:
         labels=data["labels"],
         subject_ids=data["subject_ids"].astype(object),
         session_ids=data["session_ids"].astype(object),
+        repetition_ids=data["repetition_ids"] if "repetition_ids" in data.files else None,
         sample_rate=float(manifest["sample_rate"]),
         qc=QcReport(
             total=qc_meta["total"],
