@@ -84,6 +84,34 @@ def test_corruption_kwargs_scale_to_the_signal(recordings):
     assert kwargs["dropout"] == {}
 
 
+def test_saturation_injection_actually_reaches_the_rail():
+    """Gain must be sized against the signal, or the fault is only a gain change."""
+    from reborn.data.pipeline import PreprocessConfig
+    from reborn.sensing import corruption
+    from reborn.sensing.emg_qc import check_saturation
+
+    loader = SyntheticDriftLoader(n_subjects=1, n_sessions=1, n_blocks=3, block_seconds=0.5)
+    recordings = list(loader.load())
+    profile = profile_amplitudes(recordings)
+    kwargs = suggest_corruption_kwargs(profile)
+    rail = kwargs["saturation"]["limit"]
+
+    config = PreprocessConfig(qc_kwargs={"min_rms": 0.0, "max_rms": 1e18,
+                                         "max_offset": 1e18, "saturation_limit": rail,
+                                         "flatline_std": 0.0})
+    from reborn.data.pipeline import preprocess, window_recording
+
+    windows, _, _ = window_recording(preprocess(recordings[0], config), config)
+    sample = windows[:50, :, 0]
+
+    caught = sum(
+        not check_saturation(corruption.corrupt(w.copy(), "saturation", **kwargs["saturation"]),
+                             limit=rail).valid
+        for w in sample
+    )
+    assert caught == len(sample)
+
+
 def test_calibration_records_how_each_threshold_was_derived(recordings):
     result = calibrate(recordings, margin=4.0)
 

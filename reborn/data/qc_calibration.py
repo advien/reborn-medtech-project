@@ -153,12 +153,23 @@ def suggest_corruption_kwargs(profile: AmplitudeProfile, severity: float = 3.0) 
     instead, and report the severity the rates were measured at.
     """
     rail = float(np.percentile(profile.abs_max, 99.9)) * severity
+    typical_rms = float(np.percentile(profile.rms, 50))
+
+    # `inject_saturation` overdrives by `gain` and *then* clips at `limit`, so the
+    # default gain of 10 only reaches a rail set this high on the loudest windows —
+    # the injected fault is mostly a gain change, and the detection rate measures
+    # that rather than the saturation check. Size the gain against the typical
+    # window RMS so the median window is driven well past the rail and genuinely
+    # clips. EMG is peaky: a gain that only lifts the *peaks* over the rail leaves
+    # far fewer than the 5% of samples `check_saturation` requires.
+    saturation_gain = severity * rail / typical_rms if typical_rms else 10.0
+
     return {
         "dropout": {},  # amplitude-free by construction
-        "saturation": {"limit": rail, "gain": 10.0},
+        "saturation": {"limit": rail, "gain": saturation_gain},
         "clipping": {"limit": rail},
-        "baseline_offset": {"offset": float(np.percentile(profile.rms, 50)) * severity},
-        "noise_burst": {"amplitude": float(np.percentile(profile.rms, 50)) * severity},
+        "baseline_offset": {"offset": typical_rms * severity},
+        "noise_burst": {"amplitude": typical_rms * severity},
     }
 
 
