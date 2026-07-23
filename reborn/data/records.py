@@ -35,6 +35,12 @@ class EmgRecording:
         session_id: stable identifier for the recording session. For datasets
             with several sessions per day this must distinguish them, otherwise
             the cross-session protocol silently becomes within-session.
+        repetitions: optional per-sample repetition number (0 = rest/between).
+            Required for any dataset that presents classes in **blocks** rather
+            than interleaved: a temporal split of such a recording puts whole
+            classes on one side of the train/test line. Ninapro is block-designed
+            and its convention is to split by repetition, so this is what
+            `within_session_splits` uses when it is present.
         trial_id: optional sub-division within a session.
         source: dataset name, e.g. `"ninapro_db6"`.
         meta: anything dataset-specific worth keeping (original rate, channel
@@ -46,6 +52,7 @@ class EmgRecording:
     labels: np.ndarray
     subject_id: str
     session_id: str
+    repetitions: np.ndarray | None = None
     trial_id: str | None = None
     source: str = ""
     meta: dict[str, Any] = field(default_factory=dict)
@@ -65,6 +72,14 @@ class EmgRecording:
             raise ValueError(f"sample_rate must be positive, got {self.sample_rate}")
         if not self.subject_id or not self.session_id:
             raise ValueError("subject_id and session_id are required (see module docstring)")
+        if self.repetitions is not None:
+            repetitions = np.asarray(self.repetitions).reshape(-1)
+            if repetitions.shape[0] != signal.shape[0]:
+                raise ValueError(
+                    f"repetitions ({repetitions.shape[0]}) must have one entry per sample "
+                    f"({signal.shape[0]})"
+                )
+            object.__setattr__(self, "repetitions", repetitions)
         object.__setattr__(self, "signal", signal)
         object.__setattr__(self, "labels", labels)
 
@@ -81,14 +96,26 @@ class EmgRecording:
         """Identity used by the split protocols."""
         return (self.subject_id, self.session_id, self.trial_id)
 
-    def with_signal(self, signal: np.ndarray, sample_rate: float, labels: np.ndarray) -> EmgRecording:
-        """Copy carrying a new signal — used by resampling/filtering steps."""
+    def with_signal(
+        self,
+        signal: np.ndarray,
+        sample_rate: float,
+        labels: np.ndarray,
+        repetitions: np.ndarray | None = None,
+    ) -> EmgRecording:
+        """Copy carrying a new signal — used by resampling/filtering steps.
+
+        `repetitions` defaults to the existing array, which is correct for
+        filtering (sample count unchanged) but not for resampling — that must
+        pass a re-indexed array explicitly.
+        """
         return EmgRecording(
             signal=signal,
             sample_rate=sample_rate,
             labels=labels,
             subject_id=self.subject_id,
             session_id=self.session_id,
+            repetitions=self.repetitions if repetitions is None else repetitions,
             trial_id=self.trial_id,
             source=self.source,
             meta=dict(self.meta),
@@ -142,12 +169,16 @@ class WindowSet:
     session_ids: np.ndarray  # (n_windows,) str
     sample_rate: float
     qc: QcReport
+    repetition_ids: np.ndarray | None = None  # (n_windows,) int, when the dataset has them
     source: str = ""
     meta: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         n = self.windows.shape[0]
-        for name in ("labels", "subject_ids", "session_ids"):
+        names = ["labels", "subject_ids", "session_ids"]
+        if self.repetition_ids is not None:
+            names.append("repetition_ids")
+        for name in names:
             got = np.asarray(getattr(self, name)).shape[0]
             if got != n:
                 raise ValueError(f"{name} has {got} entries, expected {n} (one per window)")
@@ -180,6 +211,7 @@ class WindowSet:
             session_ids=self.session_ids[index],
             sample_rate=self.sample_rate,
             qc=self.qc,
+            repetition_ids=None if self.repetition_ids is None else self.repetition_ids[index],
             source=self.source,
             meta=dict(self.meta),
         )

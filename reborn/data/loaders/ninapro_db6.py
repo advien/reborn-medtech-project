@@ -151,6 +151,17 @@ class NinaproDB6Loader(DatasetLoader):
         signal = np.asarray(mat["emg"], dtype=float)
         labels = np.asarray(mat[self.label_field]).reshape(-1).astype(int)
 
+        # DB6 presents each grasp as a contiguous block of 12 repetitions, not
+        # interleaved, so a temporal within-session split would put whole classes
+        # on one side of the train/test line. `rerepetition` is what makes a
+        # repetition-wise split possible — the Ninapro convention.
+        repetition_field = "rerepetition" if self.label_field == "restimulus" else "repetition"
+        repetitions = (
+            np.asarray(mat[repetition_field]).reshape(-1).astype(int)
+            if repetition_field in mat
+            else None
+        )
+
         channels = self.channels
         if channels is not None:
             if max(channels) >= signal.shape[1]:
@@ -167,10 +178,12 @@ class NinaproDB6Loader(DatasetLoader):
             labels=labels,
             subject_id=subject,
             session_id=session,
+            repetitions=repetitions,
             source=self.name,
             meta={
                 "path": str(path),
                 "label_field": self.label_field,
+                "repetition_field": repetition_field if repetitions is not None else None,
                 "channels": list(channels) if channels is not None else None,
             },
         )

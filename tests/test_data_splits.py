@@ -13,6 +13,7 @@ import pytest
 from reborn.data import PreprocessConfig, build_window_set
 from reborn.data.loaders import SyntheticDriftLoader
 from reborn.data.splits import (
+    add_calibration_repetitions,
     Split,
     add_calibration,
     cross_session_splits,
@@ -166,3 +167,115 @@ def test_calibration_that_would_consume_the_test_set_raises(window_set):
     base = cross_session_splits(window_set, n_train_sessions=1)[0]
     with pytest.raises(ValueError, match="consumed the entire test set"):
         add_calibration(base, window_set, n_per_class=base.test_index.size)
+
+
+# --------------------------------------------------------------------------- #
+# Repetition-aware splitting — block-designed datasets
+# --------------------------------------------------------------------------- #
+
+
+def _blocked_window_set():
+    """A window set shaped like Ninapro: each class in its own contiguous block.
+
+    This is the structure that breaks a temporal within-session split, so the
+    fixture reproduces it rather than the interleaved layout the synthetic
+    loader produces.
+    """
+    from reborn.data.records import QcReport, WindowSet
+
+    n_classes, n_reps, per_rep = 4, 5, 6
+    windows, labels, reps = [], [], []
+    rng = np.random.default_rng(0)
+    for label in range(1, n_classes + 1):          # classes 1..4, in blocks
+        for repetition in range(1, n_reps + 1):
+            for _ in range(per_rep):
+                windows.append(rng.standard_normal((20, 1)))
+                labels.append(label)
+                reps.append(repetition)
+            for _ in range(2):                      # rest between repetitions
+                windows.append(0.01 * rng.standard_normal((20, 1)))
+                labels.append(0)
+                reps.append(0)
+    n = len(windows)
+    return WindowSet(
+        windows=np.stack(windows),
+        labels=np.asarray(labels),
+        subject_ids=np.asarray(["s01"] * n, dtype=object),
+        session_ids=np.asarray(["d01"] * n, dtype=object),
+        sample_rate=1000.0,
+        qc=QcReport(total=n, kept=n),
+        repetition_ids=np.asarray(reps),
+    )
+
+
+def test_temporal_split_would_lose_whole_classes_on_blocked_data():
+    """The flaw this protocol change exists to fix, pinned as a test."""
+    blocked = _blocked_window_set()
+    cut = int(blocked.n_windows * 0.7)
+
+    train_classes = set(blocked.labels[:cut].tolist())
+    test_classes = set(blocked.labels[cut:].tolist())
+
+    assert test_classes - train_classes, "expected unseen classes in a naive temporal cut"
+
+
+def test_repetition_split_keeps_every_class_on_both_sides():
+    blocked = _blocked_window_set()
+
+    splits = within_session_splits(blocked)
+
+    assert len(splits) == 1
+    split = splits[0]
+    train_classes = set(blocked.labels[split.train_index].tolist())
+    test_classes = set(blocked.labels[split.test_index].tolist())
+    assert train_classes == test_classes
+
+
+def test_repetition_split_never_shares_a_repetition():
+    blocked = _blocked_window_set()
+    split = within_session_splits(blocked)[0]
+    reps = np.asarray(blocked.repetition_ids)
+
+    train_reps = set(reps[split.train_index].tolist()) - {0}
+    test_reps = set(reps[split.test_index].tolist()) - {0}
+
+    assert train_reps.isdisjoint(test_reps)
+    assert split.meta["split_by"] == "repetition"
+
+
+def test_temporal_fallback_flags_itself(window_set):
+    """Without repetition numbers the protocol degrades, and says so."""
+    assert window_set.repetition_ids is None
+
+    split = within_session_splits(window_set)[0]
+
+    assert split.meta["split_by"] == "time"
+    assert "blocked" in split.meta["warning"]
+
+
+def test_calibration_by_repetition_moves_whole_repetitions():
+    blocked = _blocked_window_set()
+    base = within_session_splits(blocked)[0]
+    reps = np.asarray(blocked.repetition_ids)
+
+    calibrated = add_calibration_repetitions(base, blocked, n_repetitions=1)
+
+    moved = np.setdiff1d(calibrated.train_index, base.train_index)
+    moved_reps = set(reps[moved].tolist())
+    assert len(moved_reps) == 1
+    # Nothing from that repetition is left behind on the test side.
+    assert not set(reps[calibrated.test_index].tolist()) & moved_reps
+    assert np.intersect1d(calibrated.train_index, calibrated.test_index).size == 0
+
+
+def test_calibration_by_repetition_needs_repetition_numbers(window_set):
+    base = within_session_splits(window_set)[0]
+    with pytest.raises(ValueError, match="no repetition numbers"):
+        add_calibration_repetitions(base, window_set, n_repetitions=1)
+
+
+def test_calibration_cannot_consume_every_test_repetition():
+    blocked = _blocked_window_set()
+    base = within_session_splits(blocked)[0]
+    with pytest.raises(ValueError, match="leaves nothing to test on"):
+        add_calibration_repetitions(base, blocked, n_repetitions=99)

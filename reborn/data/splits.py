@@ -71,12 +71,26 @@ def default_guard(window_set: WindowSet) -> int:
 def within_session_splits(
     window_set: WindowSet, train_fraction: float = 0.7, guard: int | None = None
 ) -> list[Split]:
-    """Ceiling: train and test inside one session, split **temporally**.
+    """Ceiling: train and test inside one session.
 
-    The split is contiguous in time rather than random precisely because a random
-    within-session split is the inflated number this protocol is supposed to
-    bound from above.
+    **Splits by repetition when the dataset provides repetition numbers**, and
+    falls back to a temporal cut otherwise.
+
+    The distinction is not cosmetic. Block-designed datasets — Ninapro among them
+    — record every repetition of one gesture, then every repetition of the next.
+    A contiguous temporal cut through such a recording puts whole classes on one
+    side of the line: on DB6 a 70/30 cut trains on classes {0,1,3,4,6,9} and
+    tests on {0,9,10,11}, so two classes are never trained and four never tested.
+    The resulting "ceiling" sits *below* the cross-session score, which is how
+    the flaw announces itself.
+
+    Repetition-wise splitting is also the Ninapro convention, so the numbers stay
+    comparable to the literature. Held-out repetitions are the later ones, which
+    keeps the split temporal *within* each gesture block.
     """
+    if window_set.repetition_ids is not None:
+        return _within_session_by_repetition(window_set, train_fraction)
+
     guard = default_guard(window_set) if guard is None else guard
     splits: list[Split] = []
     for subject, session, index in _groups(window_set):
@@ -90,7 +104,64 @@ def within_session_splits(
                 name=f"within/{subject}/{session}",
                 train_index=train,
                 test_index=test,
-                meta={"subject": subject, "session": session, "guard": guard},
+                meta={
+                    "subject": subject,
+                    "session": session,
+                    "guard": guard,
+                    "split_by": "time",
+                    # Loud on purpose: if the dataset is block-designed, this
+                    # number is not a ceiling and should not be reported as one.
+                    "warning": "temporal cut — verify classes are interleaved, not blocked",
+                },
+            )
+        )
+    return splits
+
+
+def _within_session_by_repetition(window_set: WindowSet, train_fraction: float) -> list[Split]:
+    """Hold out the later repetitions of every gesture."""
+    repetitions = np.asarray(window_set.repetition_ids)
+    splits: list[Split] = []
+
+    for subject, session, index in _groups(window_set):
+        # Repetition 0 marks rest/between-repetition samples in Ninapro; it spans
+        # the whole session and belongs on both sides in proportion, so it is
+        # assigned by its own ordering rather than held out wholesale.
+        session_reps = repetitions[index]
+        numbered = np.unique(session_reps[session_reps > 0])
+        if numbered.size < 2:
+            continue
+
+        cut = max(1, int(len(numbered) * train_fraction))
+        train_reps, test_reps = numbered[:cut], numbered[cut:]
+        if test_reps.size == 0:
+            continue
+
+        train_mask = np.isin(session_reps, train_reps)
+        test_mask = np.isin(session_reps, test_reps)
+
+        # Split the rest windows in the same proportion, temporally, so the class
+        # balance of both sides resembles the session's.
+        rest_positions = np.flatnonzero(session_reps == 0)
+        rest_cut = int(rest_positions.size * train_fraction)
+        train_mask[rest_positions[:rest_cut]] = True
+        test_mask[rest_positions[rest_cut:]] = True
+
+        train, test = index[train_mask], index[test_mask]
+        if train.size == 0 or test.size == 0:
+            continue
+        splits.append(
+            Split(
+                name=f"within/{subject}/{session}",
+                train_index=train,
+                test_index=test,
+                meta={
+                    "subject": subject,
+                    "session": session,
+                    "split_by": "repetition",
+                    "train_repetitions": train_reps.tolist(),
+                    "test_repetitions": test_reps.tolist(),
+                },
             )
         )
     return splits
@@ -176,6 +247,50 @@ def random_window_split(
 # --------------------------------------------------------------------------- #
 
 
+def add_calibration_repetitions(
+    split: Split, window_set: WindowSet, n_repetitions: int
+) -> Split:
+    """Move the first `n_repetitions` of the test session into training.
+
+    This is the few-shot arm as `docs/research/phase-b-plan.md` §6 specifies it:
+    calibration is measured in **repetitions**, because that is the unit a user
+    actually performs at the start of a session. Counting windows instead would
+    quote a calibration cost that means nothing to anyone wearing the device —
+    and, since windows overlap, would let fragments of one repetition sit on both
+    sides of the line.
+
+    Rest windows are not moved: rest is not something a user is asked to repeat.
+    """
+    if window_set.repetition_ids is None:
+        raise ValueError(
+            "this window set has no repetition numbers — use add_calibration (per-window) "
+            "or load a dataset whose loader provides them"
+        )
+    repetitions = np.asarray(window_set.repetition_ids)
+    test_reps = repetitions[split.test_index]
+    numbered = np.unique(test_reps[test_reps > 0])
+    if numbered.size <= n_repetitions:
+        raise ValueError(
+            f"calibration of {n_repetitions} repetitions leaves nothing to test on for "
+            f"{split.name} ({numbered.size} available)"
+        )
+
+    chosen = numbered[:n_repetitions]
+    calibration = split.test_index[np.isin(test_reps, chosen)]
+    remaining = np.setdiff1d(split.test_index, calibration)
+
+    return Split(
+        name=f"{split.name}+cal{n_repetitions}rep",
+        train_index=np.sort(np.concatenate([split.train_index, calibration])),
+        test_index=remaining,
+        meta={
+            **split.meta,
+            "calibration_repetitions": chosen.tolist(),
+            "calibration_windows": int(calibration.size),
+        },
+    )
+
+
 def add_calibration(
     split: Split,
     window_set: WindowSet,
@@ -184,11 +299,13 @@ def add_calibration(
 ) -> Split:
     """Move `n_per_class` windows per class from the test side into training.
 
-    This is the few-shot arm: the calibration windows are drawn from the target
-    session itself, so they must leave the test set — otherwise the model is
-    scored on data it trained on. Calibration windows are taken from the
-    **earliest** part of the test session, matching how a real session starts
-    with a short calibration and is then used.
+    The per-window variant, for datasets without repetition numbers. Prefer
+    `add_calibration_repetitions` where they exist: repetitions are the unit a
+    user actually performs, and windows overlap, so a window budget can split one
+    repetition across the train/test line.
+
+    Calibration windows are taken from the **earliest** part of the test session,
+    matching how a real session starts with a short calibration and is then used.
     """
     rng = np.random.default_rng(seed)
     labels = window_set.labels[split.test_index]
