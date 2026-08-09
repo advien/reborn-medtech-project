@@ -36,7 +36,7 @@ of the project.
 reborn/
 ├── docs/           # architecture, safety, data protocol, experiment plan, roadmap
 ├── reborn/         # the Python package — hal/, sensing/, plant/, control/, decision/,
-│                   # safety/, ml/, logging/
+│                   # safety/, ml/, data/, logging/
 ├── sim/            # runnable simulation experiments (entry points into the package)
 ├── notebooks/      # open-data ML exploration (phase B)
 ├── data/           # dataset pointers only — no data files committed
@@ -51,7 +51,8 @@ reborn/
 
 Engineering proceeds in two stages: **simulation first, then hardware.** Today, the HAL and the
 `sim` backend are real and usable; `decision/`, `safety/`, and `logging/` have working minimal
-implementations; `plant/`, `control/`, and `ml/` are skeletons awaiting phase C/B work. See
+implementations; `data/` (dataset backends, QC-gated preprocessing, evaluation protocols) is real
+and tested; `plant/`, `control/`, and `ml/` are skeletons awaiting phase C/B work. See
 [`docs/roadmap.md`](docs/roadmap.md) for the full research plan and
 [`sim/run_baseline_loop.py`](sim/run_baseline_loop.py) for the current minimal working loop.
 
@@ -62,6 +63,19 @@ pip install -e ".[dev]"
 pytest
 python sim/run_baseline_loop.py
 ```
+
+## Data
+
+No dataset files are committed. The notebooks and the `reborn/data/` loaders expect public EMG
+datasets downloaded locally under `data/` — see [`data/README.md`](data/README.md) for the layout
+convention and [`docs/research/phase-b-plan.md`](docs/research/phase-b-plan.md) for which dataset
+isolates which factor. Each dataset is used under its own license; cite its canonical reference in
+any work built on it.
+
+- **Ninapro DB6** — https://ninapro.hevs.ch/ — primary cross-session set (notebooks 01–03)
+- **EMG-EPN-612** — https://laboratorio-ia.epn.edu.ec/en/resources/dataset/emg-epn-612-dataset — few-shot personalization
+- **putEMG** — https://biolab.put.poznan.pl/putemg-dataset/ — cross-hardware replication (CC BY-NC 4.0)
+- **PhysioNet** — https://physionet.org/ — external-validity checks
 
 ## Key documents
 
