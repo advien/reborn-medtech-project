@@ -2,6 +2,7 @@
 
 Карта на один экран. Подробности — [`roadmap.md`](../roadmap.md) (фазы),
 [`phase-b-plan.md`](phase-b-plan.md) (данные и метрики фазы B),
+[`lab-notebook.md`](lab-notebook.md) (**почему** цепочка B1→B2→B3→B3a→… идёт именно так),
 [`../../papers/review_adherence/README.md`](../../papers/review_adherence/README.md) (фаза A).
 
 Активна **фаза B**. Фаза A идёт фоном.
