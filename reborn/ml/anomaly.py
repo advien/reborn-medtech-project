@@ -65,8 +65,23 @@ class AnomalyDetector:
         """Decision threshold on the Mahalanobis distance (None until fit)."""
         return self._threshold
 
-    def fit(self, features: np.ndarray) -> "AnomalyDetector":
-        """Fit on clean feature vectors, shape (n_windows, n_features)."""
+    def fit(
+        self, features: np.ndarray, calibration: np.ndarray | None = None
+    ) -> "AnomalyDetector":
+        """Fit on clean feature vectors, shape (n_windows, n_features).
+
+        Args:
+            features: clean windows used to estimate the mean and covariance.
+            calibration: optional *separate* clean set. If given, the flag
+                threshold is the `contamination` quantile of *its* distances
+                rather than the training set's. This matters whenever features
+                outnumber training rows only modestly: the sample covariance
+                hugs the data it was fit on, so training distances understate
+                the spread of unseen windows and the realised false-positive
+                rate runs above `contamination`. A held-out calibration set
+                sets the threshold against distances the covariance did not fit,
+                so the false-positive target holds on new data.
+        """
         X = np.asarray(features, dtype=float)
         if X.ndim != 2 or X.shape[0] < 2:
             raise ValueError("features must be 2D with at least 2 rows")
@@ -74,8 +89,15 @@ class AnomalyDetector:
         cov = np.cov(X, rowvar=False)
         cov = np.atleast_2d(cov) + self.ridge * np.eye(X.shape[1])
         self._inv_cov = np.linalg.inv(cov)
-        train_scores = self._mahalanobis(X)
-        self._threshold = float(np.quantile(train_scores, 1.0 - self.contamination))
+
+        if calibration is not None:
+            cal = np.asarray(calibration, dtype=float)
+            if cal.ndim != 2 or cal.shape[1] != X.shape[1]:
+                raise ValueError("calibration must be 2D with the same feature count as `features`")
+            threshold_scores = self._mahalanobis(cal)
+        else:
+            threshold_scores = self._mahalanobis(X)
+        self._threshold = float(np.quantile(threshold_scores, 1.0 - self.contamination))
         return self
 
     def score(self, features: np.ndarray) -> AnomalyScore:
