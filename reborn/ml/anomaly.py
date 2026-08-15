@@ -22,6 +22,8 @@ real Ninapro windows are the phase-B upgrade — they slot behind this same
 
 from __future__ import annotations
 
+import math
+from collections import deque
 from dataclasses import dataclass
 
 import numpy as np
@@ -129,3 +131,83 @@ class AnomalyDetector:
         delta = X - self._mean
         # sqrt of the quadratic form delta @ inv_cov @ delta.T, per row
         return np.sqrt(np.einsum("ij,jk,ik->i", delta, self._inv_cov, delta))
+
+
+class AdaptiveThreshold:
+    """Advisory flag threshold that tracks drift by recalibrating on recent clean
+    window distances (phase B3c).
+
+    The `AnomalyDetector` fit (mean, covariance) stays fixed; only the *threshold*
+    on its distance moves, following the wearer's current baseline. Notebook 03
+    measured why: a single fixed threshold calibrated on one session runs the
+    clean false-positive rate to double digits on later sessions as the signal
+    drifts, while a per-session threshold holds it at target.
+
+    **This is advisory and sits above a fixed floor — that is the whole safety
+    argument (CLAUDE.md invariant 2).** Feed it only the distances of windows that
+    already passed the deterministic gate (`reborn.sensing.emg_qc.assess_quality`),
+    so it never relaxes a hard safety check; it only adjusts the advisory
+    detector's sensitivity. The deterministic floor — not this threshold — is what
+    catches the named faults (dropout, saturation, …). A slow *uniform* degradation
+    that this threshold might adapt to is still caught there; a heterogeneous one
+    (e.g. DB6 session d04) stays visible because recalibrating on early clean
+    windows cannot normalise a fault that arrives later in the session.
+
+    Usage — per session: `reset()` at each session boundary, `update(distances)`
+    with that session's early clean-window distances, then `flags(distance)` on the
+    rest. Or leave it rolling (never reset) for a continuous trailing window.
+
+    Args:
+        contamination: target clean false-positive rate; the threshold is the
+            `1 - contamination` quantile of the buffered clean distances.
+        window: trailing buffer size (most recent clean distances kept).
+        min_samples: distances required before the buffer is trusted; until then
+            `value` returns `fallback`.
+        fallback: threshold used during warm-up. Defaults to `+inf` (the advisor
+            stays silent until it has a baseline — safe because the deterministic
+            floor is already active). Pass the detector's fixed global threshold
+            to fall back to fixed behaviour instead.
+    """
+
+    def __init__(
+        self,
+        contamination: float = 0.025,
+        window: int = 4000,
+        min_samples: int = 200,
+        fallback: float = math.inf,
+    ) -> None:
+        if not 0.0 < contamination < 1.0:
+            raise ValueError("contamination must be in (0, 1)")
+        if min_samples < 1 or window < min_samples:
+            raise ValueError("require 1 <= min_samples <= window")
+        self.contamination = contamination
+        self.window = window
+        self.min_samples = min_samples
+        self.fallback = fallback
+        self._buffer: deque[float] = deque(maxlen=window)
+
+    def reset(self) -> None:
+        """Clear the buffer — call at a session boundary for per-session adaptation."""
+        self._buffer.clear()
+
+    def update(self, distances: float | np.ndarray) -> "AdaptiveThreshold":
+        """Add clean-window distance(s) to the trailing buffer."""
+        arr = np.atleast_1d(np.asarray(distances, dtype=float)).ravel()
+        self._buffer.extend(float(d) for d in arr)
+        return self
+
+    @property
+    def ready(self) -> bool:
+        return len(self._buffer) >= self.min_samples
+
+    @property
+    def value(self) -> float:
+        """Current threshold: the quantile of buffered distances, or `fallback`
+        until at least `min_samples` have been seen."""
+        if not self.ready:
+            return self.fallback
+        return float(np.quantile(np.fromiter(self._buffer, dtype=float), 1.0 - self.contamination))
+
+    def flags(self, distance: float) -> bool:
+        """True if `distance` exceeds the current threshold (advisory anomaly)."""
+        return float(distance) > self.value
