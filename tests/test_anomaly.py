@@ -8,10 +8,13 @@ base install.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
-from reborn.ml.anomaly import AnomalyDetector
+from reborn.ml.anomaly import AdaptiveThreshold, AnomalyDetector
 from reborn.sensing import corruption
+from reborn.sensing.emg_qc import assess_quality
 from reborn.sensing.features import extract_features
 
 
@@ -129,6 +132,68 @@ def test_score_is_finite_and_nonnegative():
     det = _fit_on_clean()
     s = det.score(_feature_row(np.ones(400)))
     assert np.isfinite(s.score) and s.score >= 0.0
+
+
+def test_adaptive_threshold_warmup_returns_fallback():
+    rng = np.random.default_rng(0)
+    at = AdaptiveThreshold(contamination=0.025, window=1000, min_samples=200, fallback=7.0)
+    assert not at.ready
+    assert at.value == 7.0  # fallback until warmed up
+    assert at.flags(8.0) and not at.flags(6.0)
+    at.update(rng.gamma(5.0, 1.0, size=500))
+    assert at.ready
+    assert math.isfinite(at.value) and at.value != 7.0  # now data-driven
+
+
+def test_adaptive_threshold_reset_clears_buffer():
+    at = AdaptiveThreshold(contamination=0.05, window=100, min_samples=10)
+    at.update(np.ones(50))
+    assert at.ready
+    at.reset()
+    assert not at.ready
+
+
+def test_adaptive_threshold_holds_false_positive_under_drift():
+    # Distances drift upward session to session; a fixed threshold calibrated on
+    # session 0 flags ever more, while a per-session adaptive threshold holds the
+    # rate at target. This is the notebook-03 result in miniature.
+    rng = np.random.default_rng(1)
+    contam = 0.025
+
+    def session(k, n=4000):
+        return (1.0 + 0.3 * k) * rng.gamma(shape=5.0, scale=1.0, size=n)
+
+    fixed_thr = float(np.quantile(session(0), 1 - contam))
+    at = AdaptiveThreshold(contamination=contam, window=4000, min_samples=200)
+
+    fixed_fps, adaptive_fps = [], []
+    for k in range(6):
+        d = session(k)
+        half = len(d) // 2
+        fixed_fps.append(float(np.mean(d[half:] > fixed_thr)))
+        at.reset()
+        at.update(d[:half])
+        adaptive_fps.append(float(np.mean([at.flags(x) for x in d[half:]])))
+
+    assert np.mean(adaptive_fps) < np.mean(fixed_fps)
+    assert abs(np.mean(adaptive_fps) - contam) < 0.02  # adaptive stays at target
+    assert max(fixed_fps) > 0.10  # fixed blows up on the drifted sessions
+
+
+def test_floor_is_authoritative_advisor_only_sees_clean():
+    # The deterministic floor decides first; a window it rejects never feeds the
+    # advisory threshold, so adaptation can never relax a hard safety check.
+    det = _fit_on_clean()
+    at = AdaptiveThreshold(contamination=0.05, window=100, min_samples=5)
+    rng = np.random.default_rng(2)
+    windows = [_clean_window(rng) for _ in range(20)] + [np.zeros(400)]  # last: dropout
+
+    for w in windows:
+        if not assess_quality(w).valid:
+            continue  # floor rejects; the advisor is not consulted or updated
+        at.update(det.distance(_feature_row(w)))
+
+    assert len(at._buffer) == 20  # the dropout window did not enter the advisory
 
 
 def test_singular_features_do_not_crash():
