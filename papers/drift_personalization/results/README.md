@@ -1,6 +1,12 @@
-# Notebook 01 results — committed measurements
+# Committed measurements — notebooks 01 & 03
 
-The manuscript-bound tables from `notebooks/01_emg_qc_and_baselines.ipynb`.
+The manuscript-bound tables. Their consolidated scientific write-up (the B3 line:
+signal quality + advisory anomaly under session drift) is
+[`../findings-signal-quality.md`](../findings-signal-quality.md); each finding there
+cites a file below.
+
+The tables from `notebooks/01_emg_qc_and_baselines.ipynb` and
+`notebooks/03_drift_fewshot.ipynb`.
 `experiments/results/` is git-ignored and regenerable; the numbers that reach the
 paper are copied here, versioned, with their provenance. Every file below is the
 verbatim CSV the notebook wrote — do not hand-edit; regenerate.
