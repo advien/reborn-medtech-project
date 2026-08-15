@@ -1,12 +1,16 @@
 # Committed measurements — notebooks 01 & 03
 
-The manuscript-bound tables. Their consolidated scientific write-up (the B3 line:
-signal quality + advisory anomaly under session drift) is
-[`../findings-signal-quality.md`](../findings-signal-quality.md); each finding there
-cites a file below.
+The manuscript-bound tables. Two consolidated write-ups cite the files here:
+[`../findings-signal-quality.md`](../findings-signal-quality.md) (B3 line — signal
+quality + advisory anomaly) and [`../findings-intent-drift.md`](../findings-intent-drift.md)
+(B4 — intent classification + confidence calibration under drift).
 
-The tables from `notebooks/01_emg_qc_and_baselines.ipynb` and
-`notebooks/03_drift_fewshot.ipynb`.
+The tables come from `notebooks/01_emg_qc_and_baselines.ipynb`,
+`notebooks/02_intent_benchmark.ipynb`, and `notebooks/03_drift_fewshot.ipynb`.
+
+`nb02_splits_{task}_{model}_*.csv` — per-split intent results (4 combos);
+`nb02_summary_*.csv` — the protocol × (task, model) summary behind
+findings-intent-drift.md.
 `experiments/results/` is git-ignored and regenerable; the numbers that reach the
 paper are copied here, versioned, with their provenance. Every file below is the
 verbatim CSV the notebook wrote — do not hand-edit; regenerate.
