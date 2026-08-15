@@ -28,6 +28,7 @@ verbatim CSV the notebook wrote — do not hand-edit; regenerate.
 | `nb01_anomaly_fed1e81a523e5d6e.csv` | §5 | Advisory-detector flag rate + mean score per mode (10 fault-sensitive features). saturation/clipping/baseline_offset **100%**, noise_burst **17%**, clean **5.0%**. |
 | `nb01_noise_burst_sweep_fed1e81a523e5d6e.csv` | §5 | noise_burst detection vs. burst energy (severity × length). ~8% at severity 1 → **100%** by severity 8. |
 | `nb01_fp_calibration_fed1e81a523e5d6e.csv` | §5 | B3b false-positive: **time-ordered 5.0%** vs. **shuffled control 2.8%** — the gap is within-session drift. |
+| `nb03_adaptive_threshold_fed1e81a523e5d6e.csv` | nb03 (B3c) | Per-session **fixed vs. adaptive** threshold, all 10 s01 sessions. Benign FP mean 5.3%→**2.6%**; degraded `d04` stays 4.2% (not masked). |
 
 ## Headline numbers (for quick citation; source of truth is the CSVs)
 
