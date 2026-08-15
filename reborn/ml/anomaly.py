@@ -108,6 +108,22 @@ class AnomalyDetector:
         d = float(self._mahalanobis(v)[0])
         return AnomalyScore(is_anomalous=d > self._threshold, score=d)
 
+    def distance(self, features: np.ndarray) -> float | np.ndarray:
+        """Raw Mahalanobis distance(s) to the fitted centre, without thresholding.
+
+        A 1D input returns a float; a 2D `(n, n_features)` input returns an array.
+        Exposed so callers can apply their own threshold — e.g. a per-session or
+        rolling adaptive threshold that tracks drift — while the fit (mean and
+        covariance) stays fixed. The threshold is a policy choice; the distance is
+        the measurement.
+        """
+        if self._mean is None or self._inv_cov is None:
+            raise RuntimeError("AnomalyDetector.distance called before fit()")
+        X = np.asarray(features, dtype=float)
+        single = X.ndim == 1
+        d = self._mahalanobis(X.reshape(1, -1) if single else X)
+        return float(d[0]) if single else d
+
     def _mahalanobis(self, X: np.ndarray) -> np.ndarray:
         assert self._mean is not None and self._inv_cov is not None
         delta = X - self._mean

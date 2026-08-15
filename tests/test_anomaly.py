@@ -111,6 +111,20 @@ def test_calibration_feature_count_must_match():
         raise AssertionError("expected ValueError on mismatched calibration width")
 
 
+def test_distance_matches_score_and_shapes():
+    det = _fit_on_clean()
+    rng = np.random.default_rng(5)
+    row = _feature_row(_clean_window(rng))
+    # 1D -> float, and equals the score's distance
+    d1 = det.distance(np.asarray(row))
+    assert isinstance(d1, float)
+    assert abs(d1 - det.score(row).score) < 1e-9
+    # 2D -> array, one distance per row
+    batch = np.array([_feature_row(_clean_window(rng)) for _ in range(10)])
+    d2 = det.distance(batch)
+    assert d2.shape == (10,) and np.all(np.isfinite(d2))
+
+
 def test_score_is_finite_and_nonnegative():
     det = _fit_on_clean()
     s = det.score(_feature_row(np.ones(400)))
