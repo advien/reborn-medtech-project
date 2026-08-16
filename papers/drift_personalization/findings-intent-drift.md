@@ -107,6 +107,19 @@ cross-channel/model disagreement, or periodic few-shot recalibration — not mor
 input monitoring.
 *Artifact:* `results/nb03_b4a_concept_drift_*.csv`; reproduced in notebook 03 (B4a).
 
+**G8 — A decision-level monitor catches the concept drift the input monitors miss
+(B4b).** Three label-free signals computed from the classifier's own behaviour
+single out `d02_t02` where the anomaly detector (its lowest, 0.5%) does not: mean
+confidence 0.79 (others 0.92–0.95), **model disagreement (LDA vs logistic
+regression) 22%** (others 3–7%, a ~4× separation), and predicted-movement share 54%
+(others ~68%, training 72%). Disagreement is the sharpest and needs no labels. This
+closes the B3/B4 arc: input monitoring (P(x)) and decision monitoring (P(y|x)) are
+complementary — each catches a DB6 failure mode the other is blind to (see
+[`synthesis-two-monitors.md`](synthesis-two-monitors.md)). Note the per-window
+confidence gate is *not* sufficient here (individual wrong windows stay
+high-confidence, ECE 0.187); the monitor is a session-level distributional signal.
+*Artifact:* `results/nb03_b4b_decision_monitor_*.csv`; reproduced in notebook 03 (B4b).
+
 ## 4. Methodological correction (recorded for the manuscript)
 
 The within-session protocol originally split **temporally**, which is wrong for

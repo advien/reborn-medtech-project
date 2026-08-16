@@ -14,6 +14,9 @@ findings-intent-drift.md.
 `nb03_adaptive_threshold_*.csv` — per-session fixed vs adaptive advisory threshold (B3c).
 `nb03_b4a_concept_drift_*.csv` — per-session anomaly flag rate vs classifier per-class
 recall/confidence for s02, showing the cross-session collapse is concept drift (G7/B4a).
+`nb03_b4b_decision_monitor_*.csv` — per-session label-free decision signals (mean
+confidence, model disagreement, predicted-movement share) that catch the concept drift
+the input monitors miss (G8/B4b); the closing result is `../synthesis-two-monitors.md`.
 `experiments/results/` is git-ignored and regenerable; the numbers that reach the
 paper are copied here, versioned, with their provenance. Every file below is the
 verbatim CSV the notebook wrote — do not hand-edit; regenerate.
