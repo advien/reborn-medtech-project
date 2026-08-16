@@ -18,6 +18,13 @@ framing is an **open question** to be settled by the phase-A literature review,
 not an assumption — this paper must not claim novelty in any individual
 component.
 
+Concrete phase-B input already in hand: [`../drift_personalization/synthesis-two-monitors.md`](../drift_personalization/synthesis-two-monitors.md)
+gives a measured basis for a **two-monitor** safety architecture — input-quality
+monitoring (`sensing`/`ml.anomaly`) and decision-drift monitoring (a label-free
+confidence/disagreement signal in `decision`) as separate, non-redundant layers
+feeding the confidence gate. DB6 shows a distinct failure mode for each that its
+counterpart is blind to (contact fault vs. concept drift).
+
 Target venues: workshops at ICRA / IROS / EMBC (see docs/roadmap.md).
 
 Not started as a standalone manuscript.
