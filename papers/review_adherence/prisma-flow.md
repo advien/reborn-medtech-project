@@ -9,16 +9,22 @@ until the corresponding step has actually been run.
 
 | Stage | Count |
 |---|---|
-| Records identified — PubMed/MEDLINE | n = TBD |
-| Records identified — Scopus / WoS | n = TBD |
-| Records identified — IEEE Xplore | n = TBD |
-| Records identified — Semantic Scholar | n = TBD |
-| Records identified — arXiv | n = TBD |
-| Records identified — Google Scholar (first 100) | n = TBD |
-| Records identified — snowballing (citation chasing) | n = TBD |
-| **Total identified** | **n = TBD** |
-| Duplicates removed | n = TBD |
-| **Records after dedup (→ screening)** | **n = TBD** |
+| Records identified — PubMed/MEDLINE | **n = 1099** |
+| Records identified — Scopus / WoS | n = TBD — *not run: no institutional access (run manually if access obtained)* |
+| Records identified — IEEE Xplore | n = TBD — *not run: no institutional access* |
+| Records identified — Semantic Scholar | n = TBD — *supplementary; unauthenticated API rate-limited (HTTP 429), deferred* |
+| Records identified — arXiv | **n = 31** |
+| Records identified — Google Scholar (first 100) | n = TBD — *manual step (no reproducible export/order)* |
+| Records identified — snowballing (citation chasing) | n = TBD — *later stage, after includes exist* |
+| **Total identified (sources run so far)** | **n = 1130** *(provisional: PubMed + arXiv)* |
+| Duplicates removed | n = TBD — *finalised in Zotero; no shared identifiers between PubMed & arXiv sets* |
+| **Records after dedup (→ screening)** | **n = TBD** *(provisional ≈ 1130, pending Zotero dedup)* |
+
+> **Handoff to Zotero (desktop step).** The identifier sets are exported for import:
+> [`search/pubmed-pmids-2026-08-16.txt`](search/pubmed-pmids-2026-08-16.txt) (1099 PMIDs — Zotero
+> *Add Item by Identifier*) and [`search/arxiv-ids-2026-08-16.txt`](search/arxiv-ids-2026-08-16.txt)
+> (31 arXiv IDs). Import → run Zotero *Duplicate Items* → record the real "Duplicates removed" and
+> "after dedup" here. Totals stay provisional until that runs and any access-gated sources are added.
 
 ## Screening
 
@@ -48,4 +54,6 @@ until the corresponding step has actually been run.
 **Intra-rater reliability** (solo-reviewer 10% re-screen, protocol §6): Cohen's κ = TBD
 (re-screen date TBD).
 
-**Search executed (census date):** TBD.
+**Search executed (census date):** 2026-08-16 — PubMed (primary, frozen v1.0 string) + arXiv
+(supplementary). Scopus/WoS, IEEE, Semantic Scholar, Google Scholar, and snowballing still pending
+(see per-source notes above). Numbers reconcile with `search/search-log.csv` (`run_type = final`).
