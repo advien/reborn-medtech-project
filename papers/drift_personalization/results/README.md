@@ -11,6 +11,9 @@ The tables come from `notebooks/01_emg_qc_and_baselines.ipynb`,
 `nb02_splits_{task}_{model}_*.csv` — per-split intent results (4 combos);
 `nb02_summary_*.csv` — the protocol × (task, model) summary behind
 findings-intent-drift.md.
+`nb03_adaptive_threshold_*.csv` — per-session fixed vs adaptive advisory threshold (B3c).
+`nb03_b4a_concept_drift_*.csv` — per-session anomaly flag rate vs classifier per-class
+recall/confidence for s02, showing the cross-session collapse is concept drift (G7/B4a).
 `experiments/results/` is git-ignored and regenerable; the numbers that reach the
 paper are copied here, versioned, with their provenance. Every file below is the
 verbatim CSV the notebook wrote — do not hand-edit; regenerate.

@@ -87,6 +87,26 @@ limit, not a modelling failure. It does not touch the binary conclusions Reborn
 needs, and multi-class numbers here are a floor, never to be compared against
 14-channel literature.
 
+**G7 — The cross-session collapse is concept drift, invisible to the input
+monitors (B4a).** The whole cross-session degradation is *one* split — subject s02
+tested on `d02_t02` (train `d01_t01`), balanced accuracy 0.641, ECE 0.187 — and it
+is **not** the QC-degraded session (s01/`d04` classifies fine, G3/F2). The advisory
+anomaly detector, fit on the train session, does not single it out: its channel-0
+flag rate is the *lowest* of all s02 sessions (0.5%) and channel-1 mid-pack (6.4%),
+while sessions that classify perfectly (`d05_t01`, 11.8%) look *more* anomalous.
+Yet on `d02_t02` both classes' recall falls (rest 0.70, movement 0.58) at barely
+reduced confidence (0.79 vs ~0.93) — the input looks normal while the learned
+rest/movement boundary has moved. This is **concept drift** (P(y|x)), which QC and
+a one-class anomaly detector (both models of P(x)) are blind to by construction.
+**Safety implication:** signal-quality/anomaly monitoring (the B3 layers) and
+decision-level drift monitoring are *distinct* requirements; the confidence gate
+consumes the classifier's own confidence, which does not collapse here, so it cannot
+rescue the case. Preventing overconfident wrong assist under concept drift needs a
+monitor of the *decision* — the classifier's confidence distribution over time,
+cross-channel/model disagreement, or periodic few-shot recalibration — not more
+input monitoring.
+*Artifact:* `results/nb03_b4a_concept_drift_*.csv`; reproduced in notebook 03 (B4a).
+
 ## 4. Methodological correction (recorded for the manuscript)
 
 The within-session protocol originally split **temporally**, which is wrong for
@@ -109,11 +129,13 @@ convention) when repetition numbers are present; the multi-class ceiling moved t
 
 ## 6. Open questions → next
 
-1. **Investigate `sessions_elapsed = 3` directly** — one session drives the whole
-   cross-session degradation; identify the event (link to notebook 01's per-session
-   QC signal).
-2. **Notebook 03**: given ECE doubles while accuracy holds (G2), how far does the
-   unsafe-assist rate move as the gate threshold sweeps, and does few-shot
-   calibration restore *calibration* faster than *accuracy*?
+1. ~~Investigate `sessions_elapsed = 3`~~ — **done (G7)**: it is concept drift on
+   s02/`d02_t02`, invisible to the input monitors. The follow-up it raises is a
+   *decision-level* drift monitor (confidence-distribution / disagreement), which the
+   B3 input layers do not provide.
+2. **Notebook 03**: given ECE doubles while accuracy holds (G2) and a decision-level
+   monitor is now motivated (G7), how far does the unsafe-assist rate move as the
+   gate threshold sweeps, and does few-shot calibration restore *calibration* faster
+   than *accuracy*?
 3. Cross-subject few-shot headroom is smaller than assumed for the binary task
    (G4) — test before optimising.
