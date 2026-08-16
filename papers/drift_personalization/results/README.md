@@ -17,6 +17,9 @@ recall/confidence for s02, showing the cross-session collapse is concept drift (
 `nb03_b4b_decision_monitor_*.csv` — per-session label-free decision signals (mean
 confidence, model disagreement, predicted-movement share) that catch the concept drift
 the input monitors miss (G8/B4b); the closing result is `../synthesis-two-monitors.md`.
+`nb03_b6_unsafe_curve_pilot_*.csv` — **pilot (s01–s02)** unsafe-assist vs availability
+across gate thresholds, within- vs cross-session (B6). Provisional; the full run and the
+tail distribution across subjects come after the full DB6 download (B5).
 `experiments/results/` is git-ignored and regenerable; the numbers that reach the
 paper are copied here, versioned, with their provenance. Every file below is the
 verbatim CSV the notebook wrote — do not hand-edit; regenerate.
