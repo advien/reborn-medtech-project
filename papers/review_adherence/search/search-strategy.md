@@ -1,4 +1,4 @@
-# Search strategy — `v0.1` draft
+# Search strategy — `v1.0` (frozen 2026-08-13)
 
 Concept blocks and database-specific query strings for the Phase A scoping review
 ([`../protocol.md`](../protocol.md)). These are a **draft to be calibrated**, not final. The
@@ -123,3 +123,5 @@ the cap was 100. Used chiefly for forward-citation chasing on key includes, not 
 | Version | Date | Change |
 |---|---|---|
 | v0.1 | TBD (this commit) | Initial draft strings. Not yet piloted. |
+| v0.1 (piloted) | 2026-08-13 | PubMed string piloted: **1099 hits**, no phrase warnings, recall 3/3 on PubMed-indexed seeds (`seed-set.md`, `search-log.csv`). Block C not needed at this volume. |
+| **v1.0** | 2026-08-13 | **Frozen for execution.** PubMed is the calibrated **primary** string (recall 3/3, 1099 hits). Semantic Scholar / arXiv / Google Scholar treated as **supplementary** (relevance-ranked, not boolean; unauthenticated S2 API is rate-limited, so exact pilot counts are deferred and **not required** for calibration). This is the version the Phase A paper cites; superseding it = a new version + changelog row, not a silent edit. |

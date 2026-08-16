@@ -3,9 +3,10 @@
 **Working title:** *Adherence in rehabilitation robotics: how it is defined, measured, and
 influenced — a scoping review.*
 
-**Status:** protocol draft `v0.1`. This document is written *before* the search is run. It is
-the reproducibility contract: the paper that comes out of Phase A must cite the git tag of the
-protocol version it was executed from (see `docs/roadmap.md`).
+**Status:** `v1.0`, frozen 2026-08-13. The search strategy was calibrated against the seed set
+(PubMed recall 3/3) before freezing. This is the reproducibility contract: the Phase A paper cites
+the git tag of this version. Superseding it means a **new version + changelog entry**, not a silent
+edit — the frozen `v1.0` stays as the record of what was executed.
 
 **Review type:** scoping review, reported per **PRISMA-ScR** (PRISMA Extension for Scoping
 Reviews, Tricco et al. 2018). A scoping review — not a systematic review of effectiveness — is
@@ -157,3 +158,4 @@ stage). PRISMA flow diagram counts tracked live in
 | Version | Date | Change |
 |---|---|---|
 | v0.1 | TBD (this commit) | Initial protocol scaffold. No search executed yet. |
+| **v1.0** | 2026-08-13 | **Frozen for execution.** Search strings calibrated against the seed set (PubMed recall 3/3, 1099 hits; `search/seed-set.md`, `search/search-log.csv`). Semantic Scholar/arXiv/Scholar are supplementary. Git-tagged for citation. |
