@@ -97,9 +97,69 @@ recommended next step before locking the framing.*
 3. Keep terminology disciplined: **probability calibration / ECE**, explicitly
    distinguished from **user recalibration**.
 
+## Deep-dive 2026-08-16 — the elimensi paper read in full (verdict revised)
+
+**Trifena tina (2025), "Real-Time Hand Gesture Recognition from EMG Biosignals
+Using Interpretable Deep Learning for Adaptive Prosthesis," Elimensi J. of
+Electrical Engineering 3(3), E-ISSN 2987-2928.** Full text read (12 pp).
+
+**It reports accuracy AND ECE across within / cross-session / cross-subject:**
+
+| scenario | accuracy | macro-F1 | ECE |
+|---|---|---|---|
+| within-session | 96.8% | 96.1% | 1.8% |
+| cross-session | 91.7% | 90.5% | 3.6% |
+| cross-subject | 86.4% | 84.9% | 5.9% |
+
+- **The dissociation is present in their own numbers** (computed by us): within→cross-
+  session accuracy −5% but **ECE ×2.0**; within→cross-subject accuracy −11% but
+  **ECE ×3.3** — the same pattern we measured on DB6 (ECE ~×2 cross-session). This
+  **independently corroborates the phenomenon**.
+- **But they do not notice or frame it.** They read ECE as *low = good* ("a low
+  ECE indicates a well-calibrated probability for the reject/defer policy") and use
+  it to justify confidence-gated control. They never compare the *relative*
+  degradation of ECE vs accuracy; the asymmetry sits uninterpreted in the table.
+- **Confidence-gated control from calibrated probabilities is explicitly their
+  framing too** (Hold/Limited/Full on `max p(y|x)` thresholds) — so that angle is
+  not unprecedented either.
+
+**Quality caveats (weight this as weak prior art).** Obscure single-author venue;
+gmail affiliation; vague/un-named dataset ("minimum 12 healthy + 3 amputees",
+"8–16 channels", "10–12 gestures"); a garbled reference ([8] "Invitation, H.");
+suspiciously clean figures. Reads as possibly AI-assisted / low-rigor. It would
+likely be unknown to reviewers in this area, but it exists and shows the idea is "in the
+air."
+
+### Revised verdict (honest)
+- **Phenomenon:** real and now *corroborated by an independent sEMG source* — good
+  for validity, but it means the effect is **not unobserved** in sEMG.
+- **ECE across sessions in sEMG + calibration→gating:** **not unprecedented**
+  (this paper does both; Guo et al. 2017 is the ECE foundation; Gal & Ghahramani
+  2016 MC-dropout). Our earlier "no one reports ECE cross-session in sEMG" is
+  **too strong — retracted.**
+- **Remaining defensible contribution is narrower and consolidation-type:** (a) a
+  *systematic, reproducible, public-benchmark* quantification (NinaPro DB6, n=10,
+  per-subject, both binary and multi-class, exact leakage controls) — versus
+  single low-tier reports on private data; and (b) **explicitly naming and centring
+  the dissociation** (calibration degrades disproportionately, so a *low in-session
+  ECE does not license trust after a day*) that existing reports leave uninterpreted
+  (they read ECE as "good"). This is legitimate for a short methodological paper but is
+  **incremental, not a first-of-kind** — the framing must say so.
+
+## Reference anchors (verified this session)
+- Guo, Pleiss, Sun, Weinberger 2017, "On Calibration of Modern Neural Networks",
+  ICML — the ECE / temperature-scaling foundation. *Verified (cited across sources).*
+- Gal & Ghahramani 2016, "Dropout as a Bayesian Approximation", ICML — MC-dropout.
+- Ovadia et al. 2019 (arXiv:1906.02530) — calibration degrades under dataset shift.
+- Scheme & Hudgins — confidence-based rejection in myoelectric control.
+- Trifena tina 2025 (above) — sEMG cross-session accuracy+ECE, gating; weak venue.
+
 ## Next (await go-ahead)
-- Confirmatory search on the databases above; full-text of: the cross-session-ECE
-  framework, the elimensi real-time paper (\*), UAC, and 1–2 confidence-rejection
-  papers — to be certain no one states the dissociation.
-- If clear: write the positioning paragraph (precedent → gap → this paper's
-  measurement + gating consequence).
+- Decide the angle given the revised verdict: (i) reframe as *systematic
+  validation + naming the dissociation on a public benchmark* (honest, incremental,
+  scope-appropriate); or (ii) pivot the contribution toward what is genuinely less
+  covered — e.g. the **per-subject heterogeneity of the dissociation** and **whether
+  low in-session ECE predicts post-drift trustworthiness** (a *warning* result), or
+  the few-shot **calibration-vs-accuracy recovery** question (Priority 4).
+- A confirmatory database search (Scopus/IEEE/S2) is still worth one pass to see how
+  many *credible* venues report the accuracy-vs-ECE table across sessions.
