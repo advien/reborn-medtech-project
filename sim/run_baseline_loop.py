@@ -39,6 +39,27 @@ RAW_SAMPLE_RATE = 1000.0  # Hz, raw EMG sampling
 FRAME_SIZE = 50  # raw samples per processing frame -> 20 Hz decision rate
 N_FRAMES = 200  # 10 seconds of data
 MAX_TORQUE = 2.0  # Nm, synthetic "fully confident assist" request
+LIMITED_ASSIST_CAP = 0.2  # fraction of MAX_TORQUE the limited-assist fallback may pass through
+
+
+def requested_assist_scale(state: SystemState, gate_result, fallback: FallbackMode) -> float:
+    """Assist ceiling, in [0, 1], from the three decision-layer verdicts of one tick.
+
+    The gate is the only source of assist; the state machine and the fallback
+    policy can only shrink it. `LIMITED_ASSIST` is a *cap* on the gate's ceiling,
+    never a floor — so a falling confidence can only ever lower the requested
+    assist (CLAUDE.md invariant 3, "uncertainty reduces autonomy"). An earlier
+    version treated the fallback as a floor and requested 0.2 x MAX_TORQUE below
+    the gate's low threshold, which was more than the gate allowed just above it.
+    """
+    if state not in (SystemState.ASSIST, SystemState.DEGRADED):
+        return 0.0
+    if fallback == FallbackMode.PASSIVE or not gate_result.allowed:
+        return 0.0
+    scale = float(gate_result.assist_scale)
+    if fallback == FallbackMode.LIMITED_ASSIST:
+        scale = min(scale, LIMITED_ASSIST_CAP)
+    return scale
 
 
 def synthetic_emg(n_frames: int, frame_size: int, raw_sample_rate: float) -> tuple[np.ndarray, np.ndarray]:
@@ -101,12 +122,7 @@ def main() -> None:
             fallback = select_fallback(faulted=fault.faulted, confidence=confidence)
             gate_result = gate.evaluate(confidence)
 
-            if state in (SystemState.ASSIST, SystemState.DEGRADED) and gate_result.allowed and fallback == FallbackMode.NONE:
-                requested_torque = MAX_TORQUE * gate_result.assist_scale
-            elif fallback == FallbackMode.LIMITED_ASSIST:
-                requested_torque = MAX_TORQUE * 0.2
-            else:
-                requested_torque = 0.0
+            requested_torque = MAX_TORQUE * requested_assist_scale(state, gate_result, fallback)
 
             safe_torque = enforce(requested_torque, elbow.state.angle, elbow.state.velocity, limits)
             applied_torque = actuator.apply(safe_torque, dt)

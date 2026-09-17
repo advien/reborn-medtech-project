@@ -24,9 +24,12 @@ data/*
 !data/README.md
 !data/.gitignore
 
-# Experiment outputs
+# Experiment outputs: raw/bulky output is ignored; the small fingerprint-stamped result tables
+# the public notebooks write (nb01_/nb02_/nb03_) are committed so every figure traces to a file.
 experiments/results/*
 !experiments/results/.gitkeep
+!experiments/results/nb0*_*.csv
+!experiments/results/nb0*_*.json
 
 # OS
 .DS_Store
@@ -35,3 +38,7 @@ Thumbs.db
 # Editors
 .vscode/
 .idea/
+
+# Research/manuscript track — lives in a separate private repository, never committed here
+/research-private/
+/papers/

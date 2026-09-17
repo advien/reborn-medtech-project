@@ -23,6 +23,9 @@ ml = [
     "scikit-learn>=1.3",
     "torch>=2.0",
 ]
+viz = [
+    "matplotlib>=3.7",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["reborn"]
