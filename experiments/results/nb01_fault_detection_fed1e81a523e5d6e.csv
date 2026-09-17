@@ -1,0 +1,6 @@
+mode,detection_scaled,detection_defaults,injection,n_windows
+dropout,1.0,1.0,{},500
+saturation,1.0,0.332,"{""limit"": 0.0013077530844507559, ""gain"": 241.99459927404766}",500
+clipping,1.0,1.0,"{""limit"": 0.0013077530844507559}",500
+baseline_offset,1.0,1.0,"{""offset"": 4.863653071334901e-05}",500
+noise_burst,0.0,1.0,"{""amplitude"": 4.863653071334901e-05}",500

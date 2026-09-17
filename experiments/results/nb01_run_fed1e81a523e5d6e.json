@@ -1,0 +1,49 @@
+{
+  "notebook": "01_signal_trust",
+  "config_fingerprint": "fed1e81a523e5d6e",
+  "dataset": "ninapro_db6",
+  "mode": "offline",
+  "scale": "pilot",
+  "qc_subjects": [
+    "s01"
+  ],
+  "qc_sessions": "all",
+  "qc_windows_assessed": 136234,
+  "qc_windows_rejected": 915,
+  "cache_subjects": [
+    "s01",
+    "s02"
+  ],
+  "cache_windows": 259745,
+  "montage_raw_columns": [
+    0,
+    10
+  ],
+  "qc_kwargs": {
+    "min_rms": 1.4233084826660847e-07,
+    "flatline_std": 1.4233084826660847e-07,
+    "max_rms": 0.00029521482339798247,
+    "max_offset": 5.735175351859339e-06,
+    "saturation_limit": 0.0013077530844507559
+  },
+  "qc_powerline": false,
+  "corruption_severity": 3.0,
+  "fault_sample_windows": 500,
+  "fault_sample_session": "s01/d01_t01",
+  "anomaly_features": [
+    "rms",
+    "mav",
+    "zcr",
+    "wl",
+    "ssc",
+    "mnf",
+    "hfr",
+    "kurt",
+    "crest",
+    "sw_rms"
+  ],
+  "anomaly_contamination": 0.025,
+  "anomaly_split_used_downstream": "stratified_time_ordered",
+  "adaptive_subject": "s01",
+  "adaptive_windows_per_session": 3000
+}
