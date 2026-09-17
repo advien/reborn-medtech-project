@@ -3,7 +3,7 @@
 Карта на один экран. Подробности — [`roadmap.md`](../roadmap.md) (фазы),
 [`phase-b-plan.md`](phase-b-plan.md) (данные и метрики фазы B),
 [`lab-notebook.md`](lab-notebook.md) (**почему** цепочка B1→B2→B3→B3a→… идёт именно так),
-[`../../papers/review_adherence/README.md`](../../papers/review_adherence/README.md) (фаза A).
+`papers/review_adherence/README.md` в приватном research-репозитории (фаза A).
 
 Активна **фаза B**. Фаза A идёт фоном.
 
@@ -39,6 +39,11 @@
       (к цели, дисперсия срезана), degraded d04 остаётся 4.2% — **не маскируется**, а торчит контрастнее.
       **Вердикт: помогает.** Принцип: адаптируется только advisory-порог, детерминированный QC — фиксированный
       floor (safety authoritative). → B3c-impl.
+      **Поправка 2026-09-14 (публичный трек v1, `01_signal_trust` §5/§7):** разрыв time-ordered/shuffled
+      в B3b объяснялся **составом жестов** в блочной записи DB6, а не внутрисессионным дрейфом
+      (composition-matched time-ordered даёт 1.8% против shuffled 2.8%); межсессионный выигрыш
+      адаптивного порога сохраняется и при выровненном составе, а утверждение «d04 не маскируется /
+      торчит контрастнее» исполненными данными **не подтверждается** и снято.
 - [x] **B3c-impl.** `reborn.ml.anomaly.AdaptiveThreshold` — пер-сессионная/rolling адаптация
       advisory-порога (reset/update/flags) + `AnomalyDetector.distance()` (порог = отделимая политика).
       Строго advisory, кормится **только** окнами, прошедшими детерминированный floor (тест это
@@ -68,7 +73,7 @@
 ### Итог линий B3+B4
 Два независимых монитора дрейфа — **вход** (качество сигнала) и **решение** (дрейф границы) — как
 раздельные safety-слои. Эмпирическая база для architecture-paper готова
-([`synthesis-two-monitors.md`](../../papers/drift_personalization/synthesis-two-monitors.md)).
+(`papers/drift_personalization/synthesis-two-monitors.md` в приватном research-репозитории).
 Дальше: few-shot (B6/B7) — чинит ли рекалибровка concept drift и что быстрее восстанавливается,
 калибровка или точность; проводка decision-монитора в `reborn.decision` — фаза C.
 - [ ] **B5.** Скачать DB6 целиком
@@ -81,7 +86,7 @@
       **Числа предварительные — полный B6 после B5.**
 - [ ] **B6-full.** Полный прогон B6 на всём DB6 (хвостовое распределение unsafe по субъектам) → findings.
 - [ ] **B7.** Notebook 03 → few-shot: сколько повторов калибровки возвращают безопасное поведение
-- [ ] **B8.** Черновик `papers/drift_personalization/`
+- [ ] **B8.** Черновик статьи (в приватном research-репозитории)
 - [ ] **B9.** Внешняя проверка: putEMG (репликация) + EMG-EPN-612 (few-shot по субъектам)
 - [ ] **B10.** Тег кода и манифеста кэша, на который ссылается статья
 

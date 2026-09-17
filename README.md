@@ -19,8 +19,13 @@ see [`docs/research/research-context.md`](docs/research/research-context.md). Th
 
 This repository holds two things side by side:
 
-- **Research** (`notebooks/`, `papers/`) — open-data ML experiments and the papers built on top
-  of them.
+- **Research** (`notebooks/`) — three offline, pilot-scale notebooks on public EMG data, in order:
+  *Can the input signal be trusted enough to enter a decision pipeline?* (`01_signal_trust`) →
+  *Does the probability stay honest when conditions change?* (`02_confidence_under_shift`) →
+  *When the system cannot trust its evidence, what warns it, and what does refusing cost?*
+  (`03_when_not_to_help`). Result tables are committed under `experiments/results/`; figures are
+  rendered from them by `figures/render.py`. The formal manuscript track lives in a separate
+  private repository and is not part of this one.
 - **The Reborn system** (`reborn/`, `sim/`) — a Python package implementing the sensing →
   decision → actuation → safety control loop, runnable today in simulation and, later, on real
   hardware.
@@ -38,10 +43,9 @@ reborn/
 ├── reborn/         # the Python package — hal/, sensing/, plant/, control/, decision/,
 │                   # safety/, ml/, data/, logging/
 ├── sim/            # runnable simulation experiments (entry points into the package)
-├── notebooks/      # open-data ML exploration (phase B)
+├── notebooks/      # public track: 01_signal_trust -> 02_confidence_under_shift -> 03_when_not_to_help
 ├── data/           # dataset pointers only — no data files committed
 ├── experiments/    # run configs and results
-├── papers/         # one folder per publication, each citing a code/data git tag
 ├── firmware/       # hardware stage (not started)
 ├── assets/         # diagrams, photos, demo material
 └── tests/          # unit tests — safety layer is not optional coverage
@@ -72,7 +76,7 @@ convention and [`docs/research/phase-b-plan.md`](docs/research/phase-b-plan.md) 
 isolates which factor. Each dataset is used under its own license; cite its canonical reference in
 any work built on it.
 
-- **Ninapro DB6** — https://ninapro.hevs.ch/ — primary cross-session set (notebooks 01–03)
+- **Ninapro DB6** — https://ninapro.hevs.ch/ — primary cross-session set (the three public notebooks)
 - **EMG-EPN-612** — https://laboratorio-ia.epn.edu.ec/en/resources/dataset/emg-epn-612-dataset — few-shot personalization
 - **putEMG** — https://biolab.put.poznan.pl/putemg-dataset/ — cross-hardware replication (CC BY-NC 4.0)
 - **PhysioNet** — https://physionet.org/ — external-validity checks

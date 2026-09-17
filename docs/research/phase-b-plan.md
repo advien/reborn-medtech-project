@@ -3,8 +3,8 @@
 **Status:** plan (§§1–9), plus a **findings** section (§0) recording what the first real DB6
 runs changed. The plan below §0 is left as it was written *before* the data, so the
 pre-registered design and what the data did to it stay separable; §0 is the only part that
-post-dates results. Companion to [`docs/roadmap.md`](../roadmap.md) phase B and to
-[`papers/drift_personalization/`](../../papers/drift_personalization/).
+post-dates results. Companion to [`docs/roadmap.md`](../roadmap.md) phase B and to the
+manuscript in the private research repository.
 
 This document covers **public datasets used for research** (notebooks 01–05). It does not
 replace [`docs/data-protocol.md`](../data-protocol.md), which governs data recorded from
@@ -244,18 +244,19 @@ be traced back, which is the same contract phase A makes for its search log.
 Two destinations, because `experiments/results/` is git-ignored in full:
 
 - **Raw and bulky output** (per-window predictions, sweep logs) → `experiments/results/`, ignored.
-- **The small aggregated tables that appear in the paper** → `papers/drift_personalization/results/`,
-  committed, alongside the figure scripts that consume them. This mirrors how
-  `papers/review_adherence/` commits its screening and extraction CSVs.
+- **The small fingerprint-stamped tables the public notebooks write** (`nb01_*`, `nb02_*`,
+  `nb03_*`) → committed in `experiments/results/` (un-ignored by pattern), with the figure script
+  that consumes them in `figures/render.py`. Tables that reach the manuscript are copied into the
+  private research repository deliberately, never the other way round.
 
 | Notebook | Produces | Paper section |
 |---|---|---|
-| `01_emg_qc_and_baselines` | QC rejection rates and detector performance on real windows | Signal quality and what the safety layer rejects |
-| `02_intent_benchmark` | Accuracy across all four protocols, binary + multi-class | Baseline; the binary/multi drift split (F3) |
-| `03_drift_fewshot` | ECE, reliability curves, gate-threshold sweep, few-shot repetition sweep | Core result — calibration-vs-accuracy divergence (F1) |
-| `04_imu_baselines`, `05_fusion_confidence` | — | Out of scope for this paper; likely the next one |
+| `01_signal_trust` | QC rejection per session, fault/anomaly detection at calibrated severity, split-composition control, adaptive threshold | Signal quality and what the safety layer rejects |
+| `02_confidence_under_shift` | Balanced accuracy, ECE, Brier, NLL and reliability bins across the four protocols, binary primary | Baseline; probability quality under protocol contrasts |
+| `03_when_not_to_help` | Input vs. decision monitors (illustrative), risk–coverage, unsafe-assist vs. availability sweeps | Offline evidence about abstention |
+| `notebooks/future/04_imu_baselines`, `05_fusion_confidence` | — | Deferred pending synchronised motion data; not part of Public ML Track v1 |
 
-Draft location: `papers/drift_personalization/`. The manuscript cites the git tag of the code and
+The manuscript lives in the private research repository and cites the git tag of the code and
 the cache manifest its figures came from.
 
 ## 9. Execution order
@@ -269,7 +270,7 @@ the cache manifest its figures came from.
    session investigated directly. Binary task primary.
 6. ⏳ Notebook 03 → few-shot **repetition** sweep, *after* confirming there is headroom to recover
    (F4). Add a band-power feature (F5) around here or in 01.
-7. ⏳ Draft `papers/drift_personalization/` from committed result tables; add DB6 remaining subjects,
+7. ⏳ Draft the paper (private research repository) from committed result tables; add DB6 remaining subjects,
    putEMG replication, and EPN-612 few-shot as the external-validity arms.
 
 ## 10. Environment

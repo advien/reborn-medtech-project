@@ -120,51 +120,65 @@ Instead, it becomes:
 
 # 4. What do the notebooks investigate?
 
-Each notebook studies one aspect of this larger question. (Notebook numbering
-follows the current `notebooks/` layout; `02_intent_benchmark` and
-`03_drift_fewshot` cover the phase-B ML work described in `docs/roadmap.md`.)
+The public notebook track is a deliberately bounded three-step progression. All three are
+**offline, pilot-scale** evidence on public data (Ninapro DB6, two subjects); none validates a
+device, a controller, real-time operation, or a safe assistance threshold. Together they reach
+offline evidence about *abstention* — the closest current public artifact to the question in §1.
 
 ---
 
-## [Notebook 01 — EMG Signal Quality](../../notebooks/01_emg_qc_and_baselines.ipynb)
+## [Notebook 01 — Signal trust](../../notebooks/01_signal_trust.ipynb)
 
 Question:
 
-> Can EMG be trusted sufficiently to support a control decision?
+> Can the input signal be trusted enough to enter a decision pipeline?
 
 Focus:
-- intra-session variability
-- inter-session drift
-- signal quality
-- confidence implications
+- deterministic signal-quality checks and per-session rejection
+- advisory anomaly detection against calibrated injected faults
+- what a one-class monitor actually models (activity composition vs. signal health)
+- a per-session adaptive threshold for the advisory layer, above a fixed deterministic floor
 
 ---
 
-## [Notebook 04 — IMU Baselines](../../notebooks/04_imu_baselines.ipynb)
+## [Notebook 02 — Confidence under shift](../../notebooks/02_confidence_under_shift.ipynb)
 
 Question:
 
-> When does observed motion disagree with human intent?
+> Does the probability stay honest when conditions change?
 
 Focus:
-- motion stability
-- drift
-- artefacts
-- limitations of kinematic-only reasoning
+- binary rest-vs-movement as the primary task; multi-class only as a 2-channel floor
+- leakage-aware protocols (within-session by repetition, cross-session, cross-subject pilot,
+  shuffle control)
+- discrimination and probability quality (ECE, Brier, NLL) each on its own scale
+- reliability diagrams and per-split variability
 
 ---
 
-## [Notebook 05 — Signal Fusion](../../notebooks/05_fusion_confidence.ipynb)
+## [Notebook 03 — When not to help](../../notebooks/03_when_not_to_help.ipynb)
 
 Question:
 
-> Does EMG + IMU fusion improve confidence estimation rather than prediction accuracy?
+> When the system cannot trust its evidence, what warns it, and what does refusing cost?
 
 Focus:
-- agreement
-- disagreement
-- confidence
-- conservative decision policies
+- input monitors (QC, anomaly) vs. decision monitors (confidence, disagreement, class share)
+- illustrative failure cases — existence evidence, not coverage
+- an explicit confidence rejector: risk–coverage and unsafe-assist vs. availability trade-offs
+
+---
+
+## Deferred: motion sensing and multimodal evidence
+
+Two further questions from the original plan are **deferred, not abandoned**, pending a dataset
+with synchronised motion data; they live in [`notebooks/future/`](../../notebooks/future/README.md):
+
+- *When does observed motion disagree with human intent?* (IMU baselines)
+- *Does EMG + IMU fusion improve confidence estimation rather than prediction accuracy?*
+
+The system architecture in `docs/architecture.md` still describes EMG + IMU sensing; that is the
+intended future system, unchanged by the notebook track's current scope.
 
 ---
 
@@ -271,9 +285,8 @@ Human
 ```
 
 Whether this architectural framing is genuinely new remains an open research question.
-(See [`architecture.md`](../architecture.md) for how this maps onto the implemented package,
-and [`papers/architecture_position/`](../../papers/architecture_position/) for the paper
-built on this thesis.)
+(See [`architecture.md`](../architecture.md) for how this maps onto the implemented package;
+the position paper built on this thesis lives in the private research repository.)
 
 ---
 

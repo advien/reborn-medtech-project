@@ -9,7 +9,7 @@ using a safety-first, human-in-the-loop active elbow orthosis as the vehicle. EM
 are tools, not the research object — the question is how a system should determine the
 *appropriate* level of assistance when its own sensing is unreliable.
 
-Two things live in this repo: research (`notebooks/`, `papers/`) and the Reborn system itself
+Two things live in this repo: research (`notebooks/`) and the Reborn system itself
 (`reborn/` package, `sim/` entry points). Read
 [`docs/research/research-context.md`](docs/research/research-context.md) for what the project is actually asking,
 then [`docs/architecture.md`](docs/architecture.md) and [`docs/safety.md`](docs/safety.md) for
@@ -65,13 +65,33 @@ pytest                          # safety/decision layer coverage
 python sim/run_baseline_loop.py # minimal end-to-end loop (sim backend)
 ```
 
+## What must not enter the repository
+
+The research and manuscript track lives in a separate private repository and must never be
+committed here — no manuscript drafts, no result freezes, no literature-search records.
+
+Commit messages and docs here stay neutral about *where* the work is being submitted. Do not
+write the name of a target venue or submission track, the dates work has to be submitted by,
+or presentation-format wording into commit messages, file names or file contents — refer to
+the work as "Paper A", "the paper", or "in scope" instead. Naming the venue of *other
+people's* cited work (e.g. calling a source's venue weak) is fine.
+
+Commit messages must not carry AI co-authorship trailers (`Co-Authored-By:` lines for a
+model, "generated with" footers). Author the message as the user.
+
+These rules are enforced locally by `commit-msg` and `pre-commit` hooks in `.git/hooks/`,
+together with a pattern list that is intentionally left untracked so that the banned wording
+never lands in the repository itself. The hooks do not survive a fresh clone — restore them
+from the copy in `~/.claude/reborn-hooks/` after cloning.
+
 ## Data
 
 No dataset files are committed (`data/.gitignore`). `data/README.md` documents which public
 datasets (Ninapro, EMG-EPN-612, PhysioNet) the notebooks and `sim/` scripts expect, and where to
 download them locally.
 
-## Papers
+## Research and manuscript track
 
-Each folder under `papers/` corresponds to one roadmap phase/topic and should cite the specific
-code and data git tag its figures were generated from — see `docs/roadmap.md` for the phase map.
+Manuscripts, result freezes and literature-search records for each roadmap phase are kept in a
+separate private repository, not here. Work there should cite the specific code and data git tag
+its figures were generated from — see `docs/roadmap.md` for the phase map.

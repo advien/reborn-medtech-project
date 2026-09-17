@@ -4,7 +4,7 @@ Nothing produced from this loader is a result about EMG, and no number derived
 from it belongs in a paper. It exists so the pipeline, the split protocols, and
 the metric code can be built and tested before tens of gigabytes are downloaded,
 and so the test suite runs without any local data — the same role the smoke
-fixture plays in `notebooks/01_emg_qc_and_baselines.ipynb`, and labelled the same
+fixture once played in the signal-quality notebook, and labelled the same
 way. The roadmap's *real data, not synthetic* principle applies to results, not
 to plumbing tests.
 
