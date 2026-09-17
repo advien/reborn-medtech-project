@@ -1,0 +1,50 @@
+{
+  "notebook": "02_confidence_under_shift",
+  "config_fingerprint": "fed1e81a523e5d6e",
+  "dataset": "ninapro_db6",
+  "mode": "offline",
+  "scale": "pilot",
+  "subjects": [
+    "s01",
+    "s02"
+  ],
+  "sessions": "all",
+  "n_windows": 259745,
+  "qc_rejection_rate": 0.004007055485256337,
+  "montage_raw_columns": [
+    0,
+    10
+  ],
+  "features": [
+    "rms",
+    "mav",
+    "zcr",
+    "wl",
+    "ssc"
+  ],
+  "primary_task": "binary",
+  "combos": [
+    "binary_lda",
+    "binary_logreg",
+    "multi_lda",
+    "multi_logreg"
+  ],
+  "protocol_split_counts": {
+    "within-session": 20,
+    "cross-session": 18,
+    "cross-subject": 2,
+    "random-shuffle": 1
+  },
+  "within_session_split_by": "repetition",
+  "cross_session_n_train_sessions": 1,
+  "cross_session_distinct_training_sets": 2,
+  "metrics": [
+    "accuracy",
+    "balanced_accuracy",
+    "ece",
+    "brier",
+    "nll",
+    "false_assist_rate"
+  ],
+  "note_false_assist_rate": "ungated classifier quantity; gated analysis is in 03_when_not_to_help"
+}
