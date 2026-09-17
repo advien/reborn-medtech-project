@@ -1,0 +1,38 @@
+{
+  "notebook": "03_when_not_to_help",
+  "config_fingerprint": "fed1e81a523e5d6e",
+  "dataset": "ninapro_db6",
+  "mode": "offline",
+  "scale": "pilot, illustrative",
+  "monitor_subject": "s02",
+  "monitor_train_session": "d01_t01",
+  "monitor_collapse_session": "d02_t02",
+  "monitor_windows_per_session": 3000,
+  "anomaly_contamination": 0.025,
+  "gate": "ConfidenceGate(tau, tau) \u2014 hard gate on predicted-class probability",
+  "taus": [
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.99
+  ],
+  "ungated_reference_tau": 0.5,
+  "gate_model": "binary LDA, train-only standardisation",
+  "protocol_split_counts": {
+    "within-session": 20,
+    "cross-session": 18
+  },
+  "definitions": {
+    "coverage": "fraction of all windows with assist_scale > 0",
+    "selective_risk": "error rate among covered windows",
+    "unsafe_assist_rate": "allowed & pred=movement & true=rest, over all windows",
+    "assist_availability": "allowed & pred=movement, over true-movement windows"
+  }
+}
