@@ -6,7 +6,7 @@ authors:
   - given-names: "Di"
     family-names: "Vien"
     orcid: "https://orcid.org/0009-0001-7917-178X"
-repository-code: "https://github.com/advien/reborn-project"
+repository-code: "https://github.com/advien/reborn-medtech-project"
 license: MIT
 version: 0.1.0
 date-released: "2026-09-23"
