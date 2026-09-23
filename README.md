@@ -88,7 +88,6 @@ any work built on it.
 - [`docs/architecture.md`](docs/architecture.md) — layers, module boundaries, HAL
 - [`docs/safety.md`](docs/safety.md) — safety philosophy, states, triggers, ML boundaries
 - [`docs/data-protocol.md`](docs/data-protocol.md) — how data is collected and why
-- [`docs/experiments.md`](docs/experiments.md) — hypothesis-driven validation plan
 - [`docs/roadmap.md`](docs/roadmap.md) — research roadmap across phases A–D
 
 ## Explicitly out of scope

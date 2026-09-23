@@ -94,5 +94,5 @@ sensor source → sensing/QC → decision → safety → actuator sink → loggi
 
 Human-in-the-loop considerations, failure modes, and the full safety policy are in
 [`safety.md`](safety.md). Data collection strategy is in [`data-protocol.md`](data-protocol.md).
-The hypothesis-driven experiment plan is in [`experiments.md`](experiments.md). The research
+The hypothesis-driven experiment plan is kept outside this repository. The research
 roadmap tying all of this to phases A–D is in [`roadmap.md`](roadmap.md).
