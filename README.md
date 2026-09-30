@@ -73,13 +73,28 @@ python sim/run_baseline_loop.py
 No dataset files are committed. The notebooks and the `reborn/data/` loaders expect public EMG
 datasets downloaded locally under `data/` — see [`data/README.md`](data/README.md) for the layout
 convention and [`docs/research/phase-b-plan.md`](docs/research/phase-b-plan.md) for which dataset
-isolates which factor. Each dataset is used under its own license; cite its canonical reference in
-any work built on it.
+isolates which factor. The MIT license of this repository covers the code only; each dataset is
+used under its own license and terms, and must be cited by its canonical reference.
 
-- **Ninapro DB6** — https://ninapro.hevs.ch/ — primary cross-session set (the three public notebooks)
-- **EMG-EPN-612** — https://laboratorio-ia.epn.edu.ec/en/resources/dataset/emg-epn-612-dataset — few-shot personalization
-- **putEMG** — https://biolab.put.poznan.pl/putemg-dataset/ — cross-hardware replication (CC BY-NC 4.0)
-- **PhysioNet** — https://physionet.org/ — external-validity checks
+- **Ninapro DB6** — https://ninapro.hevs.ch/ — primary cross-session set (the three public notebooks).
+  No explicit license is stated on the pages consulted; the maintainers ask users to cite the DB6 paper.
+- **EMG-EPN-612** — https://laboratorio-ia.epn.edu.ec/en/resources/dataset/emg-epn-612-dataset — few-shot
+  personalization (CC BY 4.0)
+- **putEMG** — https://biolab.put.poznan.pl/putemg-dataset/ — cross-hardware replication
+  (CC BY-NC 4.0: non-commercial use only)
+- **PhysioNet** — https://physionet.org/ — external-validity checks (terms differ per record)
+
+Canonical references:
+
+- Palermo F., Cognolato M., Gijsberts A., Müller H., Caputo B., Atzori M. Analysis of the repeatability
+  of grasp recognition for hand robotic prosthesis control based on sEMG data. *2017 International
+  Conference on Rehabilitation Robotics (ICORR)*, IEEE, 2017, pp. 1154–1159.
+  doi:[10.1109/ICORR.2017.8009405](https://doi.org/10.1109/ICORR.2017.8009405) (Ninapro DB6; title as given on the Ninapro DB6 page — the DOI resolves to the same paper listed as "Repeatability of grasp recognition for robotic hand prosthesis control based on sEMG data")
+- Benalcazar M.E., Barona L., Valdivieso L., Aguas X., Zea J. EMG-EPN-612 Dataset. Zenodo, 2020.
+  doi:[10.5281/zenodo.4421500](https://doi.org/10.5281/zenodo.4421500)
+- Kaczmarek P., Mańkowski T., Tomczyński J. putEMG — A Surface Electromyography Hand Gesture
+  Recognition Dataset. *Sensors* 19(16), 3548, 2019.
+  doi:[10.3390/s19163548](https://doi.org/10.3390/s19163548)
 
 ## Key documents
 
